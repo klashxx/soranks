@@ -8,6 +8,11 @@ import (
 	"net/http"
 )
 
+const (
+	ApiURL = "https://api.stackexchange.com/2.2/users"
+	Query  = "pagesize=100&order=desc&sort=reputation&site=stackoverflow"
+)
+
 type SOUsers struct {
 	Items []struct {
 		BadgeCounts struct {
@@ -48,7 +53,7 @@ func Decode(r io.Reader) (x *SOUsers, err error) {
 }
 
 func main() {
-	req, err := http.NewRequest("GET", "https://api.stackexchange.com/2.2/users?page=1&pagesize=100&order=desc&sort=reputation&site=stackoverflow", nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s?page=%d&%s", ApiURL, 1, Query), nil)
 	if err != nil {
 		fmt.Println("Error 1", err)
 	}
@@ -72,6 +77,10 @@ func main() {
 
 	users, err := Decode(reader)
 
-	fmt.Println(users)
+	for _, user := range users.Items {
+		fmt.Println(user.DisplayName)
+		fmt.Println(user.Reputation)
+		fmt.Println(user.Location)
+	}
 
 }
