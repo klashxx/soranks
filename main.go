@@ -2,11 +2,10 @@ package main
 
 import (
 	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
-	"os"
 )
 
 type SOUsers struct {
@@ -42,6 +41,12 @@ type SOUsers struct {
 	QuotaRemaining int  `json:"quota_remaining"`
 }
 
+func Decode(r io.Reader) (x *SOUsers, err error) {
+	x = new(SOUsers)
+	err = json.NewDecoder(r).Decode(x)
+	return x, err
+}
+
 func main() {
 	req, err := http.NewRequest("GET", "https://api.stackexchange.com/2.2/users?page=1&pagesize=100&order=desc&sort=reputation&site=stackoverflow", nil)
 	if err != nil {
@@ -65,9 +70,8 @@ func main() {
 		reader = response.Body
 	}
 
-	_, err = io.Copy(os.Stdout, reader)
-	if err != nil {
-		log.Fatal(err)
-	}
+	users, err := Decode(reader)
+
+	fmt.Println(users)
 
 }
