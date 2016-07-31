@@ -138,16 +138,19 @@ func StreamFile(jsonfile string) (users *SOUsers, err error) {
 	return Decode(reader)
 }
 
-func GetUserInfo(users *SOUsers, location *regexp.Regexp) bool {
+func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int) (rep bool) {
+
+	if *counter == 0 {
+		fmt.Printf("%4s %-30s %6s %-50s\n", "Rank", "Name", "Rep", "Location")
+	}
 
 	for _, user := range users.Items {
 		if user.Reputation < MinReputation {
 			return false
 		}
 		if location.MatchString(user.Location) {
-			fmt.Println(user.DisplayName)
-			fmt.Println(user.Reputation)
-			fmt.Println(user.Location)
+			fmt.Printf("%4d %-30s %6d %-50s\n", *counter+1, user.DisplayName, user.Reputation, user.Location)
+			*counter += 1
 		}
 	}
 	return true
@@ -180,6 +183,7 @@ func main() {
 	stop := false
 	streamErrors := 0
 	currentPage := 1
+	counter := 0
 
 	var users *SOUsers
 
@@ -210,7 +214,8 @@ func main() {
 			stop = true
 		}
 
-		if !GetUserInfo(users, re) {
+		repLimit := GetUserInfo(users, re, &counter)
+		if !repLimit {
 			break
 		}
 
@@ -219,4 +224,5 @@ func main() {
 			break
 		}
 	}
+	Trace.Printf("%d users founded.\n", counter)
 }
