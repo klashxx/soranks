@@ -143,10 +143,10 @@ func GetUserInfo(users *SOUsers) bool {
 		fmt.Println(user.Reputation)
 		fmt.Println(user.Location)
 		if user.Reputation < MinReputation {
-			return true
+			return false
 		}
 	}
-	return false
+	return true
 }
 
 func GetKey() (key string, err error) {
@@ -205,7 +205,9 @@ func main() {
 			stop = true
 		}
 
-		GetUserInfo(users)
+		if !GetUserInfo(users) {
+			break
+		}
 
 		currentPage += 1
 		if currentPage >= MaxPages || !users.HasMore || stop {
