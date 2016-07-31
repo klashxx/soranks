@@ -149,15 +149,15 @@ func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit in
 		if location.MatchString(user.Location) {
 			*counter += 1
 			if *counter == 1 {
-				fmt.Printf("%4s %-30s %6s %-50s\n", "Rank", "Name", "Rep", "Location")
+				fmt.Printf("%4s %-30s %6s %-30s\n", "Rank", "Name", "Rep", "Location")
 			}
 
 			if *counter > limit {
 				return false
 			}
 
-			fmt.Printf("%4d %-30s %6d %-50s\n", *counter,
-				html.UnescapeString(user.DisplayName), user.Reputation, html.UnescapeString(user.Location))
+			fmt.Printf("%4d %-30s %6d %-30s %s\n", *counter, html.UnescapeString(user.DisplayName),
+				user.Reputation, html.UnescapeString(user.Location), user.WebsiteURL)
 
 		}
 	}
