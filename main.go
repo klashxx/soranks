@@ -13,6 +13,7 @@ import (
 )
 
 const (
+	MaxErrors     = 3
 	MaxPages      = 1
 	MinReputation = 200
 	APIKeyPath    = "./_secret/api.key"
@@ -83,34 +84,41 @@ func Init(
 		log.Ldate|log.Ltime|log.Lshortfile)
 }
 
-func Decode(r io.Reader) (x *SOUsers, err error) {
-	x = new(SOUsers)
-	return x, json.NewDecoder(r).Decode(x)
+func Decode(r io.Reader) (users *SOUsers, err error) {
+
+	users = new(SOUsers)
+	return users, json.NewDecoder(r).Decode(users)
 }
 
-func Streamdata(page int, key string) (x *SOUsers, err error) {
+func Streamdata(page int, key string) (users *SOUsers, err error) {
+
+	var reader io.ReadCloser
 
 	url := fmt.Sprintf("%s?page=%d&%s%s", ApiURL, page, CQuery, key)
-
 	Trace.Println(url)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		fmt.Println("Error 1", err)
+		Trace.Println(err)
+		return users, err
 	}
+
 	req.Header.Set("Accept-Encoding", "gzip")
 
 	response, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Println("Error 2", err)
+		Trace.Println(err)
+		return users, err
 	}
 	defer response.Body.Close()
-
-	var reader io.ReadCloser
 
 	switch response.Header.Get("Content-Encoding") {
 	case "gzip":
 		reader, err = gzip.NewReader(response.Body)
+		if err != nil {
+			Trace.Println(err)
+			return users, err
+		}
 		defer reader.Close()
 	default:
 		reader = response.Body
@@ -138,22 +146,33 @@ func main() {
 	Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 
 	stop := false
+	streamErrors := 0
 	currentPage := 1
-	key, err := GetKey()
 
+	key, err := GetKey()
 	if err != nil {
 		Warning.Println(err)
 	}
 
 	for {
-		users, _ := Streamdata(currentPage, key)
+		users, err := Streamdata(currentPage, key)
+		if err != nil || len(users.Items) == 0 {
 
+			Warning.Println("Can't stream data.")
+			streamErrors += 1
+			if streamErrors >= MaxErrors {
+				Error.Println("Max retry number reached")
+				os.Exit(5)
+			}
+			continue
+		}
 		for _, user := range users.Items {
 			fmt.Println(user.DisplayName)
 			fmt.Println(user.Reputation)
 			fmt.Println(user.Location)
 			if user.Reputation < MinReputation {
 				stop = true
+				break
 			}
 		}
 
@@ -162,5 +181,4 @@ func main() {
 			break
 		}
 	}
-
 }
