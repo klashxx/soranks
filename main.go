@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -137,13 +138,16 @@ func StreamFile(jsonfile string) (users *SOUsers, err error) {
 	return Decode(reader)
 }
 
-func GetUserInfo(users *SOUsers) bool {
+func GetUserInfo(users *SOUsers, location *regexp.Regexp) bool {
+
 	for _, user := range users.Items {
-		fmt.Println(user.DisplayName)
-		fmt.Println(user.Reputation)
-		fmt.Println(user.Location)
 		if user.Reputation < MinReputation {
 			return false
+		}
+		if location.MatchString(user.Location) {
+			fmt.Println(user.DisplayName)
+			fmt.Println(user.Reputation)
+			fmt.Println(user.Location)
 		}
 	}
 	return true
@@ -168,9 +172,10 @@ func main() {
 	flag.Parse()
 
 	Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
-
 	Trace.Println("location: ", *location)
 	Trace.Println("json: ", *jsonfile)
+
+	re := regexp.MustCompile(fmt.Sprintf("(?i)%s", *location))
 
 	stop := false
 	streamErrors := 0
@@ -205,7 +210,7 @@ func main() {
 			stop = true
 		}
 
-		if !GetUserInfo(users) {
+		if !GetUserInfo(users, re) {
 			break
 		}
 
