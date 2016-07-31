@@ -63,6 +63,7 @@ var (
 	Error    *log.Logger
 	location = flag.String("location", "spain", "location")
 	jsonfile = flag.String("json", "", "json")
+	limit    = flag.Int("limit", 20, "max number of records")
 )
 
 func Init(
@@ -138,7 +139,7 @@ func StreamFile(jsonfile string) (users *SOUsers, err error) {
 	return Decode(reader)
 }
 
-func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int) (rep bool) {
+func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit int) (rep bool) {
 
 	for _, user := range users.Items {
 		if user.Reputation < MinReputation {
@@ -148,6 +149,10 @@ func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int) (rep boo
 			*counter += 1
 			if *counter == 1 {
 				fmt.Printf("%4s %-30s %6s %-50s\n", "Rank", "Name", "Rep", "Location")
+			}
+
+			if *counter > limit {
+				return false
 			}
 
 			fmt.Printf("%4d %-30s %6d %-50s\n", *counter, user.DisplayName, user.Reputation, user.Location)
@@ -178,6 +183,7 @@ func main() {
 	Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 	Trace.Println("location: ", *location)
 	Trace.Println("json: ", *jsonfile)
+	Trace.Println("limit: ", *limit)
 
 	re := regexp.MustCompile(fmt.Sprintf("(?i)%s", *location))
 
@@ -215,7 +221,7 @@ func main() {
 			stop = true
 		}
 
-		repLimit := GetUserInfo(users, re, &counter)
+		repLimit := GetUserInfo(users, re, &counter, *limit)
 		if !repLimit {
 			break
 		}
