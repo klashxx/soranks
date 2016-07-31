@@ -3,6 +3,7 @@ package main
 import (
 	"compress/gzip"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -17,7 +18,7 @@ const (
 	MaxPages      = 1
 	MinReputation = 200
 	APIKeyPath    = "./_secret/api.key"
-	ApiURL        = "https://api.stackexchange.com/2.2/users"
+	ApiURL        = "https://api.stackexchange.com/2.2/users?page="
 	CQuery        = "pagesize=100&order=desc&sort=reputation&site=stackoverflow"
 )
 
@@ -55,10 +56,11 @@ type SOUsers struct {
 }
 
 var (
-	Trace   *log.Logger
-	Info    *log.Logger
-	Warning *log.Logger
-	Error   *log.Logger
+	Trace    *log.Logger
+	Info     *log.Logger
+	Warning  *log.Logger
+	Error    *log.Logger
+	location = flag.String("location", "spain", "location")
 )
 
 func Init(
@@ -82,6 +84,7 @@ func Init(
 	Error = log.New(errorHandle,
 		"ERROR: ",
 		log.Ldate|log.Ltime|log.Lshortfile)
+
 }
 
 func Decode(r io.Reader) (users *SOUsers, err error) {
@@ -94,7 +97,7 @@ func Streamdata(page int, key string) (users *SOUsers, err error) {
 
 	var reader io.ReadCloser
 
-	url := fmt.Sprintf("%s?page=%d&%s%s", ApiURL, page, CQuery, key)
+	url := fmt.Sprintf("%s%d&%s%s", ApiURL, page, CQuery, key)
 	Trace.Println(url)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -142,8 +145,11 @@ func GetKey() (key string, err error) {
 }
 
 func main() {
+	flag.Parse()
 
 	Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
+
+	Trace.Println("location:", *location)
 
 	stop := false
 	streamErrors := 0
@@ -175,6 +181,8 @@ func main() {
 				break
 			}
 		}
+
+		Trace.Println(users.QuotaRemaining)
 
 		currentPage += 1
 		if currentPage >= MaxPages || !users.HasMore || stop {
