@@ -51,16 +51,16 @@ Rank Name                              Rep Location
   17 Gordon Linoff                  440599 New York, United States
   18 dasblinkenlight                438190 United States
   19 Mark Byers                     435081 Denmark
-  20 Guffa                          434711 V&#228;sterv&#229;la, Sweden
+  20 Guffa                          434711 Västervåla, Sweden
 ```
 
 Specific location:
 
 ```
 $ ./soranks --location="almer.a"
-   1 Jos&#233; Juan S&#225;nchez      7599 Almeria, Spain
+   1 José Juan Sánchez                7599 Almeria, Spain
    2 klashxx                          6034 Almeria, Spain
    3 Juanjo Vega                       799 Almeria, Spain
    4 segarci                           744 Huercal De Almeria, Spain
-   5 Miguel Gil Mart&#237;nez          411 Almeria, Spain
+   5 Miguel Gil Martínez               411 Almeria, Spain
 ```
