@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	ApiURL = "https://api.stackexchange.com/2.2/users"
-	CQuery = "pagesize=100&order=desc&sort=reputation&site=stackoverflow"
+	MaxPages = 3
+	ApiURL   = "https://api.stackexchange.com/2.2/users"
+	CQuery   = "pagesize=100&order=desc&sort=reputation&site=stackoverflow"
 )
 
 type SOUsers struct {
@@ -55,8 +56,8 @@ func Decode(r io.Reader) (x *SOUsers, err error) {
 	return x, err
 }
 
-func Streamdata() (x *SOUsers, err error) {
-	url := fmt.Sprintf("%s?page=%d&%s", ApiURL, 1, CQuery)
+func Streamdata(page int) (x *SOUsers, err error) {
+	url := fmt.Sprintf("%s?page=%d&%s", ApiURL, page, CQuery)
 
 	fmt.Println(url)
 
@@ -86,12 +87,21 @@ func Streamdata() (x *SOUsers, err error) {
 
 func main() {
 
-	users, _ := Streamdata()
+	currentPage := 1
 
-	for _, user := range users.Items {
-		fmt.Println(user.DisplayName)
-		fmt.Println(user.Reputation)
-		fmt.Println(user.Location)
+	for {
+		users, _ := Streamdata(currentPage)
+
+		for _, user := range users.Items {
+			fmt.Println(user.DisplayName)
+			fmt.Println(user.Reputation)
+			fmt.Println(user.Location)
+		}
+
+		currentPage += 1
+		if currentPage == MaxPages || !users.HasMore {
+			break
+		}
 	}
 
 }
