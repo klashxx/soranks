@@ -17,7 +17,7 @@ import (
 const (
 	MaxErrors     = 3
 	MaxPages      = 1
-	MinReputation = 200
+	MinReputation = 400
 	APIKeyPath    = "./_secret/api.key"
 	ApiURL        = "https://api.stackexchange.com/2.2/users?page="
 	CQuery        = "pagesize=100&order=desc&sort=reputation&site=stackoverflow"
@@ -140,17 +140,18 @@ func StreamFile(jsonfile string) (users *SOUsers, err error) {
 
 func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int) (rep bool) {
 
-	if *counter == 0 {
-		fmt.Printf("%4s %-30s %6s %-50s\n", "Rank", "Name", "Rep", "Location")
-	}
-
 	for _, user := range users.Items {
 		if user.Reputation < MinReputation {
 			return false
 		}
 		if location.MatchString(user.Location) {
-			fmt.Printf("%4d %-30s %6d %-50s\n", *counter+1, user.DisplayName, user.Reputation, user.Location)
 			*counter += 1
+			if *counter == 1 {
+				fmt.Printf("%4s %-30s %6s %-50s\n", "Rank", "Name", "Rep", "Location")
+			}
+
+			fmt.Printf("%4d %-30s %6d %-50s\n", *counter, user.DisplayName, user.Reputation, user.Location)
+
 		}
 	}
 	return true
@@ -220,7 +221,7 @@ func main() {
 		}
 
 		currentPage += 1
-		if currentPage >= MaxPages || !users.HasMore || stop {
+		if (currentPage >= MaxPages && MaxPages != 0) || !users.HasMore || stop {
 			break
 		}
 	}
