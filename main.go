@@ -61,6 +61,7 @@ var (
 	Warning  *log.Logger
 	Error    *log.Logger
 	location = flag.String("location", "spain", "location")
+	jsonfile = flag.String("json", "", "json")
 )
 
 func Init(
@@ -93,7 +94,7 @@ func Decode(r io.Reader) (users *SOUsers, err error) {
 	return users, json.NewDecoder(r).Decode(users)
 }
 
-func Streamdata(page int, key string) (users *SOUsers, err error) {
+func StreamHTTP(page int, key string) (users *SOUsers, err error) {
 
 	var reader io.ReadCloser
 
@@ -129,6 +130,19 @@ func Streamdata(page int, key string) (users *SOUsers, err error) {
 	return Decode(reader)
 }
 
+func GetUserInfo(users *SOUsers) bool {
+	fmt.Println(users)
+	for _, user := range users.Items {
+		fmt.Println(user.DisplayName)
+		fmt.Println(user.Reputation)
+		fmt.Println(user.Location)
+		if user.Reputation < MinReputation {
+			return true
+		}
+	}
+	return false
+}
+
 func GetKey() (key string, err error) {
 	_, err = os.Stat(APIKeyPath)
 
@@ -150,39 +164,40 @@ func main() {
 	Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 
 	Trace.Println("location:", *location)
+	Trace.Println("json:", *jsonfile)
 
 	stop := false
 	streamErrors := 0
 	currentPage := 1
 
-	key, err := GetKey()
-	if err != nil {
-		Warning.Println(err)
-	}
+	var users *SOUsers
 
 	for {
-		users, err := Streamdata(currentPage, key)
-		if err != nil || len(users.Items) == 0 {
-
-			Warning.Println("Can't stream data.")
-			streamErrors += 1
-			if streamErrors >= MaxErrors {
-				Error.Println("Max retry number reached")
-				os.Exit(5)
+		if *jsonfile == "" {
+			key, err := GetKey()
+			if err != nil {
+				Warning.Println(err)
 			}
-			continue
-		}
-		for _, user := range users.Items {
-			fmt.Println(user.DisplayName)
-			fmt.Println(user.Reputation)
-			fmt.Println(user.Location)
-			if user.Reputation < MinReputation {
-				stop = true
-				break
+			users, err = StreamHTTP(currentPage, key)
+			if err != nil || len(users.Items) == 0 {
+
+				Warning.Println("Can't stream data.")
+				streamErrors += 1
+				if streamErrors >= MaxErrors {
+					Error.Println("Max retry number reached")
+					os.Exit(5)
+				}
+				continue
 			}
+		} else {
+			handler, err := os.Open(*jsonfile)
+			defer handler.Close()
+			Info.Println(handler, err)
+			users, _ = Decode(handler)
+			stop = true
 		}
 
-		Trace.Println(users.QuotaRemaining)
+		GetUserInfo(users)
 
 		currentPage += 1
 		if currentPage >= MaxPages || !users.HasMore || stop {
