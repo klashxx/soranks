@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -52,20 +53,46 @@ type SOUsers struct {
 	QuotaRemaining int  `json:"quota_remaining"`
 }
 
+var (
+	Trace   *log.Logger
+	Info    *log.Logger
+	Warning *log.Logger
+	Error   *log.Logger
+)
+
+func Init(
+	traceHandle io.Writer,
+	infoHandle io.Writer,
+	warningHandle io.Writer,
+	errorHandle io.Writer) {
+
+	Trace = log.New(traceHandle,
+		"TRACE: ",
+		log.Ldate|log.Ltime|log.Lshortfile)
+
+	Info = log.New(infoHandle,
+		"INFO: ",
+		log.Ldate|log.Ltime|log.Lshortfile)
+
+	Warning = log.New(warningHandle,
+		"WARN: ",
+		log.Ldate|log.Ltime|log.Lshortfile)
+
+	Error = log.New(errorHandle,
+		"ERROR: ",
+		log.Ldate|log.Ltime|log.Lshortfile)
+}
+
 func Decode(r io.Reader) (x *SOUsers, err error) {
 	x = new(SOUsers)
-	err = json.NewDecoder(r).Decode(x)
-	if err != nil {
-		fmt.Println(err)
-	}
-	return x, err
+	return x, json.NewDecoder(r).Decode(x)
 }
 
 func Streamdata(page int, key string) (x *SOUsers, err error) {
 
 	url := fmt.Sprintf("%s?page=%d&%s%s", ApiURL, page, CQuery, key)
 
-	fmt.Println(url)
+	Trace.Println(url)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -108,9 +135,15 @@ func GetKey() (key string, err error) {
 
 func main() {
 
+	Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
+
 	stop := false
 	currentPage := 1
-	key, _ := GetKey()
+	key, err := GetKey()
+
+	if err != nil {
+		Warning.Println(err)
+	}
 
 	for {
 		users, _ := Streamdata(currentPage, key)
