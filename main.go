@@ -3,21 +3,23 @@ package main
 import (
 	"compress/gzip"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 )
 
 const (
 	MaxErrors     = 3
 	MaxPages      = 1
-	MinReputation = 200
+	MinReputation = 400
 	APIKeyPath    = "./_secret/api.key"
-	ApiURL        = "https://api.stackexchange.com/2.2/users"
+	ApiURL        = "https://api.stackexchange.com/2.2/users?page="
 	CQuery        = "pagesize=100&order=desc&sort=reputation&site=stackoverflow"
 )
 
@@ -55,10 +57,12 @@ type SOUsers struct {
 }
 
 var (
-	Trace   *log.Logger
-	Info    *log.Logger
-	Warning *log.Logger
-	Error   *log.Logger
+	Trace    *log.Logger
+	Info     *log.Logger
+	Warning  *log.Logger
+	Error    *log.Logger
+	location = flag.String("location", "spain", "location")
+	jsonfile = flag.String("json", "", "json")
 )
 
 func Init(
@@ -82,6 +86,7 @@ func Init(
 	Error = log.New(errorHandle,
 		"ERROR: ",
 		log.Ldate|log.Ltime|log.Lshortfile)
+
 }
 
 func Decode(r io.Reader) (users *SOUsers, err error) {
@@ -90,11 +95,11 @@ func Decode(r io.Reader) (users *SOUsers, err error) {
 	return users, json.NewDecoder(r).Decode(users)
 }
 
-func Streamdata(page int, key string) (users *SOUsers, err error) {
+func StreamHTTP(page int, key string) (users *SOUsers, err error) {
 
 	var reader io.ReadCloser
 
-	url := fmt.Sprintf("%s?page=%d&%s%s", ApiURL, page, CQuery, key)
+	url := fmt.Sprintf("%s%d&%s%s", ApiURL, page, CQuery, key)
 	Trace.Println(url)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -126,6 +131,32 @@ func Streamdata(page int, key string) (users *SOUsers, err error) {
 	return Decode(reader)
 }
 
+func StreamFile(jsonfile string) (users *SOUsers, err error) {
+	reader, err := os.Open(jsonfile)
+	defer reader.Close()
+
+	return Decode(reader)
+}
+
+func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int) (rep bool) {
+
+	for _, user := range users.Items {
+		if user.Reputation < MinReputation {
+			return false
+		}
+		if location.MatchString(user.Location) {
+			*counter += 1
+			if *counter == 1 {
+				fmt.Printf("%4s %-30s %6s %-50s\n", "Rank", "Name", "Rep", "Location")
+			}
+
+			fmt.Printf("%4d %-30s %6d %-50s\n", *counter, user.DisplayName, user.Reputation, user.Location)
+
+		}
+	}
+	return true
+}
+
 func GetKey() (key string, err error) {
 	_, err = os.Stat(APIKeyPath)
 
@@ -142,43 +173,57 @@ func GetKey() (key string, err error) {
 }
 
 func main() {
+	flag.Parse()
 
 	Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
+	Trace.Println("location: ", *location)
+	Trace.Println("json: ", *jsonfile)
+
+	re := regexp.MustCompile(fmt.Sprintf("(?i)%s", *location))
 
 	stop := false
 	streamErrors := 0
 	currentPage := 1
+	counter := 0
 
-	key, err := GetKey()
-	if err != nil {
-		Warning.Println(err)
-	}
+	var users *SOUsers
 
 	for {
-		users, err := Streamdata(currentPage, key)
-		if err != nil || len(users.Items) == 0 {
+		if *jsonfile == "" {
+			key, err := GetKey()
+			if err != nil {
+				Warning.Println(err)
+			}
+			users, err = StreamHTTP(currentPage, key)
+			if err != nil || len(users.Items) == 0 {
 
-			Warning.Println("Can't stream data.")
-			streamErrors += 1
-			if streamErrors >= MaxErrors {
-				Error.Println("Max retry number reached")
+				Warning.Println("Can't stream data.")
+				streamErrors += 1
+				if streamErrors >= MaxErrors {
+					Error.Println("Max retry number reached")
+					os.Exit(5)
+				}
+				continue
+			}
+		} else {
+			var err error
+			users, err = StreamFile(*jsonfile)
+			if err != nil {
+				Error.Println("Can't decode json file.")
 				os.Exit(5)
 			}
-			continue
+			stop = true
 		}
-		for _, user := range users.Items {
-			fmt.Println(user.DisplayName)
-			fmt.Println(user.Reputation)
-			fmt.Println(user.Location)
-			if user.Reputation < MinReputation {
-				stop = true
-				break
-			}
+
+		repLimit := GetUserInfo(users, re, &counter)
+		if !repLimit {
+			break
 		}
 
 		currentPage += 1
-		if currentPage >= MaxPages || !users.HasMore || stop {
+		if (currentPage >= MaxPages && MaxPages != 0) || !users.HasMore || stop {
 			break
 		}
 	}
+	Trace.Printf("%d users founded.\n", counter)
 }
