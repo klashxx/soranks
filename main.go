@@ -152,7 +152,7 @@ func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit in
 				fmt.Printf("%4s %-30s %6s %-30s\n", "Rank", "Name", "Rep", "Location")
 			}
 
-			if *counter > limit {
+			if *counter > limit && limit != 0 {
 				return false
 			}
 
