@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"html"
 	"io"
 	"io/ioutil"
 	"log"
@@ -155,7 +156,8 @@ func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit in
 				return false
 			}
 
-			fmt.Printf("%4d %-30s %6d %-50s\n", *counter, user.DisplayName, user.Reputation, user.Location)
+			fmt.Printf("%4d %-30s %6d %-50s\n", *counter,
+				html.UnescapeString(user.DisplayName), user.Reputation, html.UnescapeString(user.Location))
 
 		}
 	}
