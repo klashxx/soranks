@@ -10,7 +10,7 @@ import (
 
 const (
 	ApiURL = "https://api.stackexchange.com/2.2/users"
-	Query  = "pagesize=100&order=desc&sort=reputation&site=stackoverflow"
+	CQuery = "pagesize=100&order=desc&sort=reputation&site=stackoverflow"
 )
 
 type SOUsers struct {
@@ -49,11 +49,18 @@ type SOUsers struct {
 func Decode(r io.Reader) (x *SOUsers, err error) {
 	x = new(SOUsers)
 	err = json.NewDecoder(r).Decode(x)
+	if err != nil {
+		fmt.Println(err)
+	}
 	return x, err
 }
 
-func main() {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s?page=%d&%s", ApiURL, 1, Query), nil)
+func Streamdata() (x *SOUsers, err error) {
+	url := fmt.Sprintf("%s?page=%d&%s", ApiURL, 1, CQuery)
+
+	fmt.Println(url)
+
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		fmt.Println("Error 1", err)
 	}
@@ -74,8 +81,12 @@ func main() {
 	default:
 		reader = response.Body
 	}
+	return Decode(reader)
+}
 
-	users, err := Decode(reader)
+func main() {
+
+	users, _ := Streamdata()
 
 	for _, user := range users.Items {
 		fmt.Println(user.DisplayName)
