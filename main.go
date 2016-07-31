@@ -130,8 +130,14 @@ func StreamHTTP(page int, key string) (users *SOUsers, err error) {
 	return Decode(reader)
 }
 
+func StreamFile(jsonfile string) (users *SOUsers, err error) {
+	reader, err := os.Open(jsonfile)
+	defer reader.Close()
+
+	return Decode(reader)
+}
+
 func GetUserInfo(users *SOUsers) bool {
-	fmt.Println(users)
 	for _, user := range users.Items {
 		fmt.Println(user.DisplayName)
 		fmt.Println(user.Reputation)
@@ -163,8 +169,8 @@ func main() {
 
 	Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 
-	Trace.Println("location:", *location)
-	Trace.Println("json:", *jsonfile)
+	Trace.Println("location: ", *location)
+	Trace.Println("json: ", *jsonfile)
 
 	stop := false
 	streamErrors := 0
@@ -190,10 +196,12 @@ func main() {
 				continue
 			}
 		} else {
-			handler, err := os.Open(*jsonfile)
-			defer handler.Close()
-			Info.Println(handler, err)
-			users, _ = Decode(handler)
+			var err error
+			users, err = StreamFile(*jsonfile)
+			if err != nil {
+				Error.Println("Can't decode json file.")
+				os.Exit(5)
+			}
 			stop = true
 		}
 
