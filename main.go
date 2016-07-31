@@ -5,13 +5,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
+	"os"
+	"strings"
 )
 
 const (
-	MaxPages = 3
-	ApiURL   = "https://api.stackexchange.com/2.2/users"
-	CQuery   = "pagesize=100&order=desc&sort=reputation&site=stackoverflow"
+	MaxPages      = 1
+	MinReputation = 200
+	APIKeyPath    = "./_secret/api.key"
+	ApiURL        = "https://api.stackexchange.com/2.2/users"
+	CQuery        = "pagesize=100&order=desc&sort=reputation&site=stackoverflow"
 )
 
 type SOUsers struct {
@@ -56,8 +61,9 @@ func Decode(r io.Reader) (x *SOUsers, err error) {
 	return x, err
 }
 
-func Streamdata(page int) (x *SOUsers, err error) {
-	url := fmt.Sprintf("%s?page=%d&%s", ApiURL, page, CQuery)
+func Streamdata(page int, key string) (x *SOUsers, err error) {
+
+	url := fmt.Sprintf("%s?page=%d&%s%s", ApiURL, page, CQuery, key)
 
 	fmt.Println(url)
 
@@ -85,21 +91,41 @@ func Streamdata(page int) (x *SOUsers, err error) {
 	return Decode(reader)
 }
 
+func GetKey() (key string, err error) {
+	_, err = os.Stat(APIKeyPath)
+
+	if err != nil {
+		return "", fmt.Errorf("Can't find API key: %s", APIKeyPath)
+	}
+
+	strkey, err := ioutil.ReadFile(APIKeyPath)
+	if err != nil {
+		return "", fmt.Errorf("Can't load API key: %s", err)
+	}
+
+	return fmt.Sprintf("&key=%s", strings.TrimRight(string(strkey)[:], "\n")), nil
+}
+
 func main() {
 
+	stop := false
 	currentPage := 1
+	key, _ := GetKey()
 
 	for {
-		users, _ := Streamdata(currentPage)
+		users, _ := Streamdata(currentPage, key)
 
 		for _, user := range users.Items {
 			fmt.Println(user.DisplayName)
 			fmt.Println(user.Reputation)
 			fmt.Println(user.Location)
+			if user.Reputation < MinReputation {
+				stop = true
+			}
 		}
 
 		currentPage += 1
-		if currentPage == MaxPages || !users.HasMore {
+		if currentPage >= MaxPages || !users.HasMore || stop {
 			break
 		}
 	}
