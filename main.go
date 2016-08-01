@@ -210,7 +210,13 @@ func DumpJson(path *string, ranks *Ranks) {
 }
 
 func DumpMarkdown(ranks Ranks) {
-	tmpl, _ := template.New("test").Parse("{{.Rank}} {{.DisplayName}}\n")
+	head := "Rank|Name|Rep|Location|Web|Avatar\n----|----|---|--------|---|------\n"
+
+	userfmt := "{{.Rank}}|[{{.DisplayName}}]({{.Link}})|{{.Reputation}}|{{.Location}}|{{.WebsiteURL}}|![Avatar]({{.ProfileImage}})\n"
+
+	fmt.Println(head)
+
+	tmpl, _ := template.New("test").Parse(userfmt)
 	for _, userRank := range ranks {
 		_ = tmpl.Execute(os.Stdout, userRank)
 	}
