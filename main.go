@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
+	"time"
 )
 
 const (
@@ -22,6 +23,7 @@ const (
 	MaxPages      = 1
 	MinReputation = 400
 	APIKeyPath    = "./_secret/api.key"
+	GitHubToken   = "./_secret/token"
 	ApiURL        = "https://api.stackexchange.com/2.2/users?page="
 	CQuery        = "pagesize=100&order=desc&sort=reputation&site=stackoverflow"
 )
@@ -71,6 +73,60 @@ type SOUserRank struct {
 }
 
 type Ranks []SOUserRank
+
+type GitHubUpdatePut struct {
+	Message   string `json:"message"`
+	Committer struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	} `json:"committer"`
+	Content string `json:"content"`
+	Sha     string `json:"sha"`
+}
+
+type GitHubUpdateRsp struct {
+	Content struct {
+		Name        string `json:"name"`
+		Path        string `json:"path"`
+		Sha         string `json:"sha"`
+		Size        int    `json:"size"`
+		URL         string `json:"url"`
+		HTMLURL     string `json:"html_url"`
+		GitURL      string `json:"git_url"`
+		DownloadURL string `json:"download_url"`
+		Type        string `json:"type"`
+		Links       struct {
+			Self string `json:"self"`
+			Git  string `json:"git"`
+			HTML string `json:"html"`
+		} `json:"_links"`
+	} `json:"content"`
+	Commit struct {
+		Sha     string `json:"sha"`
+		URL     string `json:"url"`
+		HTMLURL string `json:"html_url"`
+		Author  struct {
+			Date  time.Time `json:"date"`
+			Name  string    `json:"name"`
+			Email string    `json:"email"`
+		} `json:"author"`
+		Committer struct {
+			Date  time.Time `json:"date"`
+			Name  string    `json:"name"`
+			Email string    `json:"email"`
+		} `json:"committer"`
+		Message string `json:"message"`
+		Tree    struct {
+			URL string `json:"url"`
+			Sha string `json:"sha"`
+		} `json:"tree"`
+		Parents []struct {
+			URL     string `json:"url"`
+			HTMLURL string `json:"html_url"`
+			Sha     string `json:"sha"`
+		} `json:"parents"`
+	} `json:"commit"`
+}
 
 var (
 	Trace    *log.Logger
@@ -365,4 +421,6 @@ func main() {
 	}
 	Info.Printf("%04d pages requested.\n", lastPage)
 	Info.Printf("%04d users found.\n", counter)
+
+	_ = GetKey(GitHubToken)
 }
