@@ -80,6 +80,7 @@ var (
 	location = flag.String("location", "spain", "location")
 	jsonfile = flag.String("json", "", "json sample file")
 	jsonrsp  = flag.String("jsonrsp", "", "json response file")
+	mdrsp    = flag.String("mdrsp", "", "markdown response file")
 	limit    = flag.Int("limit", 20, "max number of records")
 )
 
@@ -209,7 +210,7 @@ func DumpJson(path *string, ranks *Ranks) {
 }
 
 func DumpMarkdown(ranks Ranks) {
-	tmpl, _ := template.New("test").Parse("{{.Rank}} items are made of {{.DisplayName}}\n")
+	tmpl, _ := template.New("test").Parse("{{.Rank}} {{.DisplayName}}\n")
 	for _, userRank := range ranks {
 		_ = tmpl.Execute(os.Stdout, userRank)
 	}
@@ -238,6 +239,7 @@ func main() {
 	Trace.Println("json: ", *jsonfile)
 	Trace.Println("jsontest: ", *jsonfile)
 	Trace.Println("jsonrsp: ", *jsonrsp)
+	Trace.Println("mdrsp: ", *mdrsp)
 	Trace.Println("limit: ", *limit)
 
 	re := regexp.MustCompile(fmt.Sprintf("(?i)%s", *location))
@@ -293,7 +295,9 @@ func main() {
 		os.Exit(0)
 	}
 
-	DumpMarkdown(ranks)
+	if *mdrsp != "" {
+		DumpMarkdown(ranks)
+	}
 
 	if *jsonrsp != "" {
 		DumpJson(jsonrsp, &ranks)
