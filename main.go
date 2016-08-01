@@ -279,8 +279,14 @@ func main() {
 			break
 		}
 	}
+
+	if counter == 0 {
+		Warning.Println("No results found.")
+		os.Exit(0)
+	}
+
 	if *jsonrsp != "" {
 		DumpJson(jsonrsp, &ranks)
 	}
-	Trace.Printf("%d users founded.\n", counter)
+	Trace.Printf("%d users found.\n", counter)
 }
