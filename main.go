@@ -77,7 +77,7 @@ var (
 	Info     *log.Logger
 	Warning  *log.Logger
 	Error    *log.Logger
-	location = flag.String("location", "spain", "location")
+	location = flag.String("location", ".", "location")
 	jsonfile = flag.String("json", "", "json sample file")
 	jsonrsp  = flag.String("jsonrsp", "", "json response file")
 	mdrsp    = flag.String("mdrsp", "", "markdown response file")
@@ -154,7 +154,6 @@ func StreamHTTP(page int, key string) (users *SOUsers, err error) {
 func StreamFile(jsonfile string) (users *SOUsers, err error) {
 	reader, err := os.Open(jsonfile)
 	defer reader.Close()
-
 	return Decode(reader)
 }
 
@@ -217,7 +216,24 @@ func DumpJson(path *string, ranks *Ranks) {
 func DumpMarkdown(path *string, ranks Ranks) {
 	Trace.Printf("Writing MD to: %s\n", *path)
 
-	head := "Rank|Name|Rep|Location|Web|Avatar\n----|----|---|--------|---|------\n"
+	head := `# soranks
+
+[Stackoverflow](http://stackoverflow.com/) rankings by **location**.
+
+### Area%s
+
+
+Rank|Name|Rep|Location|Web|Avatar
+----|----|---|--------|---|------
+`
+	var fmtLocation string
+
+	if *location == "." {
+		fmtLocation = ": WorldWide"
+	} else {
+		fmtLocation = fmt.Sprintf(" *pattern*: %s", *location)
+	}
+
 	userfmt := "{{.Rank}}|[{{.DisplayName}}]({{.Link}})|{{.Reputation}}|{{.Location}}|{{.WebsiteURL}}|![Avatar]({{.ProfileImage}})\n"
 
 	f, err := os.Create(*path)
@@ -227,13 +243,13 @@ func DumpMarkdown(path *string, ranks Ranks) {
 
 	defer f.Close()
 	w := bufio.NewWriter(f)
-	n4, err := w.WriteString(head)
+	n4, err := w.WriteString(fmt.Sprintf(head, fmtLocation))
 	if err != nil {
 		panic(err)
 	}
 	w.Flush()
 
-	tmpl, _ := template.New("test").Parse(userfmt)
+	tmpl, _ := template.New("Ranking").Parse(userfmt)
 	for _, userRank := range ranks {
 		_ = tmpl.Execute(f, userRank)
 	}
