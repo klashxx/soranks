@@ -167,7 +167,8 @@ func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit in
 		if location.MatchString(user.Location) {
 			*counter += 1
 			if *counter == 1 && term {
-				fmt.Printf("%4s %-30s %6s %s\n", "Rank", "Name", "Rep", "Location")
+				Info.Println("User data:")
+				Info.Printf("%4s %-30s %6s %s\n", "Rank", "Name", "Rep", "Location")
 			}
 
 			if *counter > limit && limit != 0 {
@@ -185,7 +186,7 @@ func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit in
 			*ranks = append(*ranks, s)
 
 			if term {
-				fmt.Printf("%4d %-30s %6d %s\n", *counter, html.UnescapeString(user.DisplayName),
+				Info.Printf("%4d %-30s %6d %s\n", *counter, html.UnescapeString(user.DisplayName),
 					user.Reputation, html.UnescapeString(user.Location))
 			}
 
@@ -195,7 +196,7 @@ func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit in
 }
 
 func DumpJson(path *string, ranks *Ranks) {
-	Trace.Printf("Writing to: %s\n", *path)
+	Trace.Printf("Writing JSON to: %s\n", *path)
 	jsonenc, _ := json.MarshalIndent(*ranks, "", " ")
 	f, err := os.Create(*path)
 	if err != nil {
@@ -213,8 +214,9 @@ func DumpJson(path *string, ranks *Ranks) {
 }
 
 func DumpMarkdown(path *string, ranks Ranks) {
-	head := "Rank|Name|Rep|Location|Web|Avatar\n----|----|---|--------|---|------\n"
+	Trace.Printf("Writing MD to: %s\n", *path)
 
+	head := "Rank|Name|Rep|Location|Web|Avatar\n----|----|---|--------|---|------\n"
 	userfmt := "{{.Rank}}|[{{.DisplayName}}]({{.Link}})|{{.Reputation}}|{{.Location}}|{{.WebsiteURL}}|![Avatar]({{.ProfileImage}})\n"
 
 	f, err := os.Create(*path)
@@ -282,8 +284,12 @@ func main() {
 		if *jsonfile == "" {
 			var key string
 			if lastPage == currentPage {
+				Info.Println("Trying to extract API key.")
 				key = GetKey()
 			}
+
+			Trace.Printf("Requesting page: %d\n", currentPage)
+
 			users, err := StreamHTTP(currentPage, key)
 			if err != nil || len(users.Items) == 0 {
 
@@ -296,6 +302,7 @@ func main() {
 				continue
 			}
 		} else {
+			Info.Println("Extracting from source JSON file.")
 			var err error
 			users, err = StreamFile(*jsonfile)
 			if err != nil {
@@ -329,5 +336,6 @@ func main() {
 	if *jsonrsp != "" {
 		DumpJson(jsonrsp, &ranks)
 	}
-	Trace.Printf("%d users found.\n", counter)
+	Info.Printf("%04d pages requested.\n", lastPage)
+	Info.Printf("%04d users found.\n", counter)
 }
