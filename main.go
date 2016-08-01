@@ -127,6 +127,7 @@ func StreamHTTP(page int, key string) (users *SOUsers, err error) {
 		Trace.Println(err)
 		return users, err
 	}
+	Trace.Println("Sending header.")
 
 	req.Header.Set("Accept-Encoding", "gzip")
 
@@ -135,6 +136,8 @@ func StreamHTTP(page int, key string) (users *SOUsers, err error) {
 		Trace.Println(err)
 		return users, err
 	}
+	Trace.Println("Response.")
+
 	defer response.Body.Close()
 
 	switch response.Header.Get("Content-Encoding") {
@@ -160,6 +163,7 @@ func StreamFile(jsonfile string) (users *SOUsers, err error) {
 func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit int, ranks *Ranks, term bool) (rep bool) {
 
 	for _, user := range users.Items {
+		Trace.Printf("Procesing user: %d\n", user.AccountID)
 		if user.Reputation < MinReputation {
 			return false
 		}
@@ -257,21 +261,21 @@ Rank|Name|Rep|Location|Web|Avatar
 	w.Flush()
 }
 
-func GetKey() (key string) {
+func GetKey(path string) (key string) {
 
-	_, err := os.Stat(APIKeyPath)
+	_, err := os.Stat(path)
 	if err != nil {
-		Warning.Printf("Can't find API key: %s", APIKeyPath)
+		Warning.Printf("Can't find key: %s", path)
 		return ""
 	}
 
-	strkey, err := ioutil.ReadFile(APIKeyPath)
+	strkey, err := ioutil.ReadFile(path)
 	if err != nil {
-		Warning.Printf("Can't load API key: %s", err)
+		Warning.Printf("Can't load key: %s", err)
 		return ""
 	}
 
-	return fmt.Sprintf("&key=%s", strings.TrimRight(string(strkey)[:], "\n"))
+	return strings.TrimRight(string(strkey)[:], "\n")
 }
 
 func main() {
@@ -300,14 +304,17 @@ func main() {
 	for {
 		if *jsonfile == "" {
 			var key string
+			var err error
 			if lastPage == currentPage {
 				Info.Println("Trying to extract API key.")
-				key = GetKey()
+				key = fmt.Sprintf("&key=%s", GetKey(APIKeyPath))
 			}
 
 			Trace.Printf("Requesting page: %d\n", currentPage)
 
-			users, err := StreamHTTP(currentPage, key)
+			users, err = StreamHTTP(currentPage, key)
+
+			Trace.Printf("Page users: %d\n", len(users.Items))
 			if err != nil || len(users.Items) == 0 {
 
 				Warning.Println("Can't stream data.")
@@ -329,10 +336,13 @@ func main() {
 			stop = true
 		}
 
+		Trace.Println("User info extraction.")
+
 		repLimit := GetUserInfo(users, re, &counter, *limit, &ranks, *term)
 		if !repLimit {
 			break
 		}
+		Trace.Println("User info extraction done.")
 
 		lastPage = currentPage
 		currentPage += 1
