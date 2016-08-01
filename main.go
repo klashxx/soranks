@@ -24,8 +24,9 @@ const (
 	MinReputation = 400
 	APIKeyPath    = "./_secret/api.key"
 	GitHubToken   = "./_secret/token"
-	ApiURL        = "https://api.stackexchange.com/2.2/users?page="
-	CQuery        = "pagesize=100&order=desc&sort=reputation&site=stackoverflow"
+	SOApiURL      = "https://api.stackexchange.com/2.2/users?page="
+	SOQuery       = "pagesize=100&order=desc&sort=reputation&site=stackoverflow"
+	GHApiURL      = "https://api.github.com/repos/klashxx/soranks"
 )
 
 type SOUsers struct {
@@ -128,6 +129,20 @@ type GitHubUpdateRsp struct {
 	} `json:"commit"`
 }
 
+type Repo struct {
+	Sha  string `json:"sha"`
+	URL  string `json:"url"`
+	Tree []struct {
+		Path string `json:"path"`
+		Mode string `json:"mode"`
+		Type string `json:"type"`
+		Sha  string `json:"sha"`
+		Size int    `json:"size,omitempty"`
+		URL  string `json:"url"`
+	} `json:"tree"`
+	Truncated bool `json:"truncated"`
+}
+
 var (
 	Trace    *log.Logger
 	Info     *log.Logger
@@ -175,7 +190,7 @@ func StreamHTTP(page int, key string) (users *SOUsers, err error) {
 
 	var reader io.ReadCloser
 
-	url := fmt.Sprintf("%s%d&%s%s", ApiURL, page, CQuery, key)
+	url := fmt.Sprintf("%s%d&%s%s", SOApiURL, page, SOQuery, key)
 	Trace.Println(url)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -334,6 +349,45 @@ func GetKey(path string) (key string) {
 	return strings.TrimRight(string(strkey)[:], "\n")
 }
 
+func StreamHTTP2(url string) (repo *Repo, err error) {
+
+	Info.Println(url)
+
+	var reader io.ReadCloser
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		Trace.Println(err)
+	}
+	Trace.Println("Sending header.")
+
+	response, err := http.DefaultClient.Do(req)
+	if err != nil {
+		Trace.Println(err)
+	}
+	Trace.Println("Response.")
+
+	defer response.Body.Close()
+
+	switch response.Header.Get("Content-Encoding") {
+	case "gzip":
+		reader, err = gzip.NewReader(response.Body)
+		if err != nil {
+			Trace.Println(err)
+		}
+		defer reader.Close()
+	default:
+		reader = response.Body
+	}
+
+	return Decode2(reader)
+}
+
+func Decode2(r io.Reader) (repo *Repo, err error) {
+
+	repo = new(Repo)
+	return repo, json.NewDecoder(r).Decode(repo)
+}
+
 func main() {
 	flag.Parse()
 
@@ -422,5 +476,20 @@ func main() {
 	Info.Printf("%04d pages requested.\n", lastPage)
 	Info.Printf("%04d users found.\n", counter)
 
-	_ = GetKey(GitHubToken)
+	//_ = GetKey(GitHubToken)
+	url := fmt.Sprintf("%s%s", GHApiURL, "/git/trees/dev")
+
+	repo, _ := StreamHTTP2(url)
+	for _, file := range repo.Tree {
+		if file.Path == "data" {
+			url = file.URL
+			break
+		}
+	}
+
+	repo, _ = StreamHTTP2(url)
+	for _, file := range repo.Tree {
+		Trace.Println(file)
+	}
+
 }
