@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"compress/gzip"
 	"encoding/json"
 	"flag"
@@ -76,7 +77,8 @@ var (
 	Warning  *log.Logger
 	Error    *log.Logger
 	location = flag.String("location", "spain", "location")
-	jsonfile = flag.String("json", "", "json")
+	jsonfile = flag.String("json", "", "json sample file")
+	jsonrsp  = flag.String("jsonrsp", "", "json response file")
 	limit    = flag.Int("limit", 20, "max number of records")
 )
 
@@ -208,6 +210,8 @@ func main() {
 	Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 	Trace.Println("location: ", *location)
 	Trace.Println("json: ", *jsonfile)
+	Trace.Println("jsontest: ", *jsonfile)
+	Trace.Println("jsonrsp: ", *jsonrsp)
 	Trace.Println("limit: ", *limit)
 
 	re := regexp.MustCompile(fmt.Sprintf("(?i)%s", *location))
@@ -256,6 +260,19 @@ func main() {
 		if (currentPage >= MaxPages && MaxPages != 0) || !users.HasMore || stop {
 			break
 		}
+	}
+	if *jsonrsp != "" {
+		jsonenc, _ := json.MarshalIndent(ranks, "", " ")
+		f, err := os.Create(*jsonrsp)
+		if err != nil {
+			panic(err)
+		}
+		defer f.Close()
+		w := bufio.NewWriter(f)
+		n4, err := w.WriteString(string(jsonenc))
+		Trace.Printf("Wrote %d bytes to %s\n", n4, *jsonrsp)
+
+		w.Flush()
 	}
 	Trace.Printf("%d users founded.\n", counter)
 }
