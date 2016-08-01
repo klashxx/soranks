@@ -12,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"regexp"
 	"strings"
 	"text/template"
@@ -154,6 +155,7 @@ var (
 	mdrsp    = flag.String("mdrsp", "", "markdown response file")
 	limit    = flag.Int("limit", 20, "max number of records")
 	term     = flag.Bool("term", false, "print output in terminal")
+	publish  = flag.Bool("publish", false, "publish ranks in Github")
 )
 
 func Init(
@@ -388,6 +390,26 @@ func Decode2(r io.Reader) (repo *Repo, err error) {
 	return repo, json.NewDecoder(r).Decode(repo)
 }
 
+func GitHubIntegration() {
+	//_ = GetKey(GitHubToken)
+	bmdrsp := path.Base(*mdrsp)
+	Trace.Printf("base md: %s\n", bmdrsp)
+	url := fmt.Sprintf("%s%s", GHApiURL, "/git/trees/dev")
+
+	repo, _ := StreamHTTP2(url)
+	for _, file := range repo.Tree {
+		if file.Path == "data" {
+			url = file.URL
+			break
+		}
+	}
+
+	repo, _ = StreamHTTP2(url)
+	for _, file := range repo.Tree {
+		Trace.Println(file)
+	}
+}
+
 func main() {
 	flag.Parse()
 
@@ -399,6 +421,7 @@ func main() {
 	Trace.Println("mdrsp: ", *mdrsp)
 	Trace.Println("limit: ", *limit)
 	Trace.Println("term: ", *term)
+	Trace.Println("publish: ", *publish)
 
 	re := regexp.MustCompile(fmt.Sprintf("(?i)%s", *location))
 
@@ -468,28 +491,15 @@ func main() {
 
 	if *mdrsp != "" {
 		DumpMarkdown(mdrsp, ranks)
+		if *publish {
+			GitHubIntegration()
+		}
 	}
 
 	if *jsonrsp != "" {
 		DumpJson(jsonrsp, &ranks)
 	}
+
 	Info.Printf("%04d pages requested.\n", lastPage)
 	Info.Printf("%04d users found.\n", counter)
-
-	//_ = GetKey(GitHubToken)
-	url := fmt.Sprintf("%s%s", GHApiURL, "/git/trees/dev")
-
-	repo, _ := StreamHTTP2(url)
-	for _, file := range repo.Tree {
-		if file.Path == "data" {
-			url = file.URL
-			break
-		}
-	}
-
-	repo, _ = StreamHTTP2(url)
-	for _, file := range repo.Tree {
-		Trace.Println(file)
-	}
-
 }
