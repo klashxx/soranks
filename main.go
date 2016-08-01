@@ -82,6 +82,7 @@ var (
 	jsonrsp  = flag.String("jsonrsp", "", "json response file")
 	mdrsp    = flag.String("mdrsp", "", "markdown response file")
 	limit    = flag.Int("limit", 20, "max number of records")
+	term     = flag.Bool("term", false, "print output in terminal")
 )
 
 func Init(
@@ -157,7 +158,7 @@ func StreamFile(jsonfile string) (users *SOUsers, err error) {
 	return Decode(reader)
 }
 
-func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit int, ranks *Ranks) (rep bool) {
+func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit int, ranks *Ranks, term bool) (rep bool) {
 
 	for _, user := range users.Items {
 		if user.Reputation < MinReputation {
@@ -165,8 +166,8 @@ func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit in
 		}
 		if location.MatchString(user.Location) {
 			*counter += 1
-			if *counter == 1 {
-				fmt.Printf("%4s %-30s %6s %-30s\n", "Rank", "Name", "Rep", "Location")
+			if *counter == 1 && term {
+				fmt.Printf("%4s %-30s %6s %s\n", "Rank", "Name", "Rep", "Location")
 			}
 
 			if *counter > limit && limit != 0 {
@@ -183,8 +184,10 @@ func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit in
 
 			*ranks = append(*ranks, s)
 
-			fmt.Printf("%4d %-30s %6d %-30s %s\n", *counter, html.UnescapeString(user.DisplayName),
-				user.Reputation, html.UnescapeString(user.Location), user.WebsiteURL)
+			if term {
+				fmt.Printf("%4d %-30s %6d %s\n", *counter, html.UnescapeString(user.DisplayName),
+					user.Reputation, html.UnescapeString(user.Location))
+			}
 
 		}
 	}
@@ -260,6 +263,7 @@ func main() {
 	Trace.Println("jsonrsp: ", *jsonrsp)
 	Trace.Println("mdrsp: ", *mdrsp)
 	Trace.Println("limit: ", *limit)
+	Trace.Println("term: ", *term)
 
 	re := regexp.MustCompile(fmt.Sprintf("(?i)%s", *location))
 
@@ -298,7 +302,7 @@ func main() {
 			stop = true
 		}
 
-		repLimit := GetUserInfo(users, re, &counter, *limit, &ranks)
+		repLimit := GetUserInfo(users, re, &counter, *limit, &ranks, *term)
 		if !repLimit {
 			break
 		}
