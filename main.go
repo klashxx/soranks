@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
+	"time"
 )
 
 const (
@@ -22,8 +23,10 @@ const (
 	MaxPages      = 1
 	MinReputation = 400
 	APIKeyPath    = "./_secret/api.key"
-	ApiURL        = "https://api.stackexchange.com/2.2/users?page="
-	CQuery        = "pagesize=100&order=desc&sort=reputation&site=stackoverflow"
+	GitHubToken   = "./_secret/token"
+	SOApiURL      = "https://api.stackexchange.com/2.2/users?page="
+	SOQuery       = "pagesize=100&order=desc&sort=reputation&site=stackoverflow"
+	GHApiURL      = "https://api.github.com/repos/klashxx/soranks"
 )
 
 type SOUsers struct {
@@ -72,6 +75,74 @@ type SOUserRank struct {
 
 type Ranks []SOUserRank
 
+type GitHubUpdatePut struct {
+	Message   string `json:"message"`
+	Committer struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	} `json:"committer"`
+	Content string `json:"content"`
+	Sha     string `json:"sha"`
+}
+
+type GitHubUpdateRsp struct {
+	Content struct {
+		Name        string `json:"name"`
+		Path        string `json:"path"`
+		Sha         string `json:"sha"`
+		Size        int    `json:"size"`
+		URL         string `json:"url"`
+		HTMLURL     string `json:"html_url"`
+		GitURL      string `json:"git_url"`
+		DownloadURL string `json:"download_url"`
+		Type        string `json:"type"`
+		Links       struct {
+			Self string `json:"self"`
+			Git  string `json:"git"`
+			HTML string `json:"html"`
+		} `json:"_links"`
+	} `json:"content"`
+	Commit struct {
+		Sha     string `json:"sha"`
+		URL     string `json:"url"`
+		HTMLURL string `json:"html_url"`
+		Author  struct {
+			Date  time.Time `json:"date"`
+			Name  string    `json:"name"`
+			Email string    `json:"email"`
+		} `json:"author"`
+		Committer struct {
+			Date  time.Time `json:"date"`
+			Name  string    `json:"name"`
+			Email string    `json:"email"`
+		} `json:"committer"`
+		Message string `json:"message"`
+		Tree    struct {
+			URL string `json:"url"`
+			Sha string `json:"sha"`
+		} `json:"tree"`
+		Parents []struct {
+			URL     string `json:"url"`
+			HTMLURL string `json:"html_url"`
+			Sha     string `json:"sha"`
+		} `json:"parents"`
+	} `json:"commit"`
+}
+
+type Repo struct {
+	Sha  string `json:"sha"`
+	URL  string `json:"url"`
+	Tree []struct {
+		Path string `json:"path"`
+		Mode string `json:"mode"`
+		Type string `json:"type"`
+		Sha  string `json:"sha"`
+		Size int    `json:"size,omitempty"`
+		URL  string `json:"url"`
+	} `json:"tree"`
+	Truncated bool `json:"truncated"`
+}
+
 var (
 	Trace    *log.Logger
 	Info     *log.Logger
@@ -119,7 +190,7 @@ func StreamHTTP(page int, key string) (users *SOUsers, err error) {
 
 	var reader io.ReadCloser
 
-	url := fmt.Sprintf("%s%d&%s%s", ApiURL, page, CQuery, key)
+	url := fmt.Sprintf("%s%d&%s%s", SOApiURL, page, SOQuery, key)
 	Trace.Println(url)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -127,6 +198,7 @@ func StreamHTTP(page int, key string) (users *SOUsers, err error) {
 		Trace.Println(err)
 		return users, err
 	}
+	Trace.Println("Sending header.")
 
 	req.Header.Set("Accept-Encoding", "gzip")
 
@@ -135,6 +207,8 @@ func StreamHTTP(page int, key string) (users *SOUsers, err error) {
 		Trace.Println(err)
 		return users, err
 	}
+	Trace.Println("Response.")
+
 	defer response.Body.Close()
 
 	switch response.Header.Get("Content-Encoding") {
@@ -160,6 +234,7 @@ func StreamFile(jsonfile string) (users *SOUsers, err error) {
 func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit int, ranks *Ranks, term bool) (rep bool) {
 
 	for _, user := range users.Items {
+		Trace.Printf("Procesing user: %d\n", user.AccountID)
 		if user.Reputation < MinReputation {
 			return false
 		}
@@ -257,21 +332,60 @@ Rank|Name|Rep|Location|Web|Avatar
 	w.Flush()
 }
 
-func GetKey() (key string) {
+func GetKey(path string) (key string) {
 
-	_, err := os.Stat(APIKeyPath)
+	_, err := os.Stat(path)
 	if err != nil {
-		Warning.Printf("Can't find API key: %s", APIKeyPath)
+		Warning.Printf("Can't find key: %s", path)
 		return ""
 	}
 
-	strkey, err := ioutil.ReadFile(APIKeyPath)
+	strkey, err := ioutil.ReadFile(path)
 	if err != nil {
-		Warning.Printf("Can't load API key: %s", err)
+		Warning.Printf("Can't load key: %s", err)
 		return ""
 	}
 
-	return fmt.Sprintf("&key=%s", strings.TrimRight(string(strkey)[:], "\n"))
+	return strings.TrimRight(string(strkey)[:], "\n")
+}
+
+func StreamHTTP2(url string) (repo *Repo, err error) {
+
+	Info.Println(url)
+
+	var reader io.ReadCloser
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		Trace.Println(err)
+	}
+	Trace.Println("Sending header.")
+
+	response, err := http.DefaultClient.Do(req)
+	if err != nil {
+		Trace.Println(err)
+	}
+	Trace.Println("Response.")
+
+	defer response.Body.Close()
+
+	switch response.Header.Get("Content-Encoding") {
+	case "gzip":
+		reader, err = gzip.NewReader(response.Body)
+		if err != nil {
+			Trace.Println(err)
+		}
+		defer reader.Close()
+	default:
+		reader = response.Body
+	}
+
+	return Decode2(reader)
+}
+
+func Decode2(r io.Reader) (repo *Repo, err error) {
+
+	repo = new(Repo)
+	return repo, json.NewDecoder(r).Decode(repo)
 }
 
 func main() {
@@ -300,14 +414,17 @@ func main() {
 	for {
 		if *jsonfile == "" {
 			var key string
+			var err error
 			if lastPage == currentPage {
 				Info.Println("Trying to extract API key.")
-				key = GetKey()
+				key = fmt.Sprintf("&key=%s", GetKey(APIKeyPath))
 			}
 
 			Trace.Printf("Requesting page: %d\n", currentPage)
 
-			users, err := StreamHTTP(currentPage, key)
+			users, err = StreamHTTP(currentPage, key)
+
+			Trace.Printf("Page users: %d\n", len(users.Items))
 			if err != nil || len(users.Items) == 0 {
 
 				Warning.Println("Can't stream data.")
@@ -329,10 +446,13 @@ func main() {
 			stop = true
 		}
 
+		Trace.Println("User info extraction.")
+
 		repLimit := GetUserInfo(users, re, &counter, *limit, &ranks, *term)
 		if !repLimit {
 			break
 		}
+		Trace.Println("User info extraction done.")
 
 		lastPage = currentPage
 		currentPage += 1
@@ -355,4 +475,21 @@ func main() {
 	}
 	Info.Printf("%04d pages requested.\n", lastPage)
 	Info.Printf("%04d users found.\n", counter)
+
+	//_ = GetKey(GitHubToken)
+	url := fmt.Sprintf("%s%s", GHApiURL, "/git/trees/dev")
+
+	repo, _ := StreamHTTP2(url)
+	for _, file := range repo.Tree {
+		if file.Path == "data" {
+			url = file.URL
+			break
+		}
+	}
+
+	repo, _ = StreamHTTP2(url)
+	for _, file := range repo.Tree {
+		Trace.Println(file)
+	}
+
 }
