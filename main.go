@@ -189,6 +189,24 @@ func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit in
 	return true
 }
 
+func DumpJson(path *string, ranks *Ranks) {
+	Trace.Printf("Writing to: %s\n", *path)
+	jsonenc, _ := json.MarshalIndent(*ranks, "", " ")
+	f, err := os.Create(*path)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	w := bufio.NewWriter(f)
+	n4, err := w.WriteString(string(jsonenc))
+	if err != nil {
+		panic(err)
+	}
+	Trace.Printf("Wrote %d bytes to %s\n", n4, *jsonrsp)
+
+	w.Flush()
+}
+
 func GetKey() (key string, err error) {
 	_, err = os.Stat(APIKeyPath)
 
@@ -262,17 +280,7 @@ func main() {
 		}
 	}
 	if *jsonrsp != "" {
-		jsonenc, _ := json.MarshalIndent(ranks, "", " ")
-		f, err := os.Create(*jsonrsp)
-		if err != nil {
-			panic(err)
-		}
-		defer f.Close()
-		w := bufio.NewWriter(f)
-		n4, err := w.WriteString(string(jsonenc))
-		Trace.Printf("Wrote %d bytes to %s\n", n4, *jsonrsp)
-
-		w.Flush()
+		DumpJson(jsonrsp, &ranks)
 	}
 	Trace.Printf("%d users founded.\n", counter)
 }
