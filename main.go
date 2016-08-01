@@ -171,9 +171,6 @@ func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit in
 				Info.Printf("%4s %-30s %6s %s\n", "Rank", "Name", "Rep", "Location")
 			}
 
-			if *counter > limit && limit != 0 {
-				return false
-			}
 			s := SOUserRank{Rank: *counter,
 				AccountID:    user.AccountID,
 				DisplayName:  user.DisplayName,
@@ -188,6 +185,10 @@ func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit in
 			if term {
 				Info.Printf("%4d %-30s %6d %s\n", *counter, html.UnescapeString(user.DisplayName),
 					user.Reputation, html.UnescapeString(user.Location))
+			}
+
+			if *counter >= limit && limit != 0 {
+				return false
 			}
 
 		}
