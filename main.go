@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"compress/gzip"
 	"encoding/json"
 	"flag"
@@ -13,6 +14,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"text/template"
 )
 
 const (
@@ -57,14 +59,30 @@ type SOUsers struct {
 	QuotaRemaining int  `json:"quota_remaining"`
 }
 
+type SOUserRank struct {
+	Rank         int    `json:"rank"`
+	AccountID    int    `json:"account_id"`
+	DisplayName  string `json:"display_name"`
+	Reputation   int    `json:"reputation"`
+	Location     string `json:"location,omitempty"`
+	WebsiteURL   string `json:"website_url,omitempty"`
+	Link         string `json:"link"`
+	ProfileImage string `json:"profile_image"`
+}
+
+type Ranks []SOUserRank
+
 var (
 	Trace    *log.Logger
 	Info     *log.Logger
 	Warning  *log.Logger
 	Error    *log.Logger
-	location = flag.String("location", "spain", "location")
-	jsonfile = flag.String("json", "", "json")
+	location = flag.String("location", ".", "location")
+	jsonfile = flag.String("json", "", "json sample file")
+	jsonrsp  = flag.String("jsonrsp", "", "json response file")
+	mdrsp    = flag.String("mdrsp", "", "markdown response file")
 	limit    = flag.Int("limit", 20, "max number of records")
+	term     = flag.Bool("term", false, "print output in terminal")
 )
 
 func Init(
@@ -136,11 +154,10 @@ func StreamHTTP(page int, key string) (users *SOUsers, err error) {
 func StreamFile(jsonfile string) (users *SOUsers, err error) {
 	reader, err := os.Open(jsonfile)
 	defer reader.Close()
-
 	return Decode(reader)
 }
 
-func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit int) (rep bool) {
+func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit int, ranks *Ranks, term bool) (rep bool) {
 
 	for _, user := range users.Items {
 		if user.Reputation < MinReputation {
@@ -148,35 +165,113 @@ func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit in
 		}
 		if location.MatchString(user.Location) {
 			*counter += 1
-			if *counter == 1 {
-				fmt.Printf("%4s %-30s %6s %-50s\n", "Rank", "Name", "Rep", "Location")
+			if *counter == 1 && term {
+				Info.Println("User data:")
+				Info.Printf("%4s %-30s %6s %s\n", "Rank", "Name", "Rep", "Location")
 			}
 
-			if *counter > limit {
+			s := SOUserRank{Rank: *counter,
+				AccountID:    user.AccountID,
+				DisplayName:  user.DisplayName,
+				Reputation:   user.Reputation,
+				Location:     user.Location,
+				WebsiteURL:   user.WebsiteURL,
+				Link:         user.Link,
+				ProfileImage: user.ProfileImage}
+
+			*ranks = append(*ranks, s)
+
+			if term {
+				Info.Printf("%4d %-30s %6d %s\n", *counter, html.UnescapeString(user.DisplayName),
+					user.Reputation, html.UnescapeString(user.Location))
+			}
+
+			if *counter >= limit && limit != 0 {
 				return false
 			}
-
-			fmt.Printf("%4d %-30s %6d %-50s\n", *counter,
-				html.UnescapeString(user.DisplayName), user.Reputation, html.UnescapeString(user.Location))
 
 		}
 	}
 	return true
 }
 
-func GetKey() (key string, err error) {
-	_, err = os.Stat(APIKeyPath)
-
+func DumpJson(path *string, ranks *Ranks) {
+	Trace.Printf("Writing JSON to: %s\n", *path)
+	jsonenc, _ := json.MarshalIndent(*ranks, "", " ")
+	f, err := os.Create(*path)
 	if err != nil {
-		return "", fmt.Errorf("Can't find API key: %s", APIKeyPath)
+		panic(err)
+	}
+	defer f.Close()
+	w := bufio.NewWriter(f)
+	n4, err := w.WriteString(string(jsonenc))
+	if err != nil {
+		panic(err)
+	}
+	Trace.Printf("Wrote %d bytes to %s\n", n4, *path)
+
+	w.Flush()
+}
+
+func DumpMarkdown(path *string, ranks Ranks) {
+	Trace.Printf("Writing MD to: %s\n", *path)
+
+	head := `# soranks
+
+[Stackoverflow](http://stackoverflow.com/) rankings by **location**.
+
+### Area%s
+
+
+Rank|Name|Rep|Location|Web|Avatar
+----|----|---|--------|---|------
+`
+	var fmtLocation string
+
+	if *location == "." {
+		fmtLocation = ": WorldWide"
+	} else {
+		fmtLocation = fmt.Sprintf(" *pattern*: %s", *location)
+	}
+
+	userfmt := "{{.Rank}}|[{{.DisplayName}}]({{.Link}})|{{.Reputation}}|{{.Location}}|{{.WebsiteURL}}|![Avatar]({{.ProfileImage}})\n"
+
+	f, err := os.Create(*path)
+	if err != nil {
+		panic(err)
+	}
+
+	defer f.Close()
+	w := bufio.NewWriter(f)
+	n4, err := w.WriteString(fmt.Sprintf(head, fmtLocation))
+	if err != nil {
+		panic(err)
+	}
+	w.Flush()
+
+	tmpl, _ := template.New("Ranking").Parse(userfmt)
+	for _, userRank := range ranks {
+		_ = tmpl.Execute(f, userRank)
+	}
+	Trace.Printf("Wrote %d bytes to %s\n", n4, *path)
+	w.Flush()
+}
+
+func GetKey() (key string) {
+
+	_, err := os.Stat(APIKeyPath)
+	if err != nil {
+		Warning.Printf("Can't find API key: %s", APIKeyPath)
+		return ""
 	}
 
 	strkey, err := ioutil.ReadFile(APIKeyPath)
 	if err != nil {
-		return "", fmt.Errorf("Can't load API key: %s", err)
+		Warning.Printf("Can't load API key: %s", err)
+		return ""
 	}
 
-	return fmt.Sprintf("&key=%s", strings.TrimRight(string(strkey)[:], "\n")), nil
+	return fmt.Sprintf("&key=%s", strings.TrimRight(string(strkey)[:], "\n"))
 }
 
 func main() {
@@ -185,24 +280,34 @@ func main() {
 	Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 	Trace.Println("location: ", *location)
 	Trace.Println("json: ", *jsonfile)
+	Trace.Println("jsontest: ", *jsonfile)
+	Trace.Println("jsonrsp: ", *jsonrsp)
+	Trace.Println("mdrsp: ", *mdrsp)
 	Trace.Println("limit: ", *limit)
+	Trace.Println("term: ", *term)
 
 	re := regexp.MustCompile(fmt.Sprintf("(?i)%s", *location))
 
 	stop := false
 	streamErrors := 0
 	currentPage := 1
+	lastPage := currentPage
 	counter := 0
 
 	var users *SOUsers
+	var ranks Ranks
 
 	for {
 		if *jsonfile == "" {
-			key, err := GetKey()
-			if err != nil {
-				Warning.Println(err)
+			var key string
+			if lastPage == currentPage {
+				Info.Println("Trying to extract API key.")
+				key = GetKey()
 			}
-			users, err = StreamHTTP(currentPage, key)
+
+			Trace.Printf("Requesting page: %d\n", currentPage)
+
+			users, err := StreamHTTP(currentPage, key)
 			if err != nil || len(users.Items) == 0 {
 
 				Warning.Println("Can't stream data.")
@@ -214,6 +319,7 @@ func main() {
 				continue
 			}
 		} else {
+			Info.Println("Extracting from source JSON file.")
 			var err error
 			users, err = StreamFile(*jsonfile)
 			if err != nil {
@@ -223,15 +329,30 @@ func main() {
 			stop = true
 		}
 
-		repLimit := GetUserInfo(users, re, &counter, *limit)
+		repLimit := GetUserInfo(users, re, &counter, *limit, &ranks, *term)
 		if !repLimit {
 			break
 		}
 
+		lastPage = currentPage
 		currentPage += 1
 		if (currentPage >= MaxPages && MaxPages != 0) || !users.HasMore || stop {
 			break
 		}
 	}
-	Trace.Printf("%d users founded.\n", counter)
+
+	if counter == 0 {
+		Warning.Println("No results found.")
+		os.Exit(0)
+	}
+
+	if *mdrsp != "" {
+		DumpMarkdown(mdrsp, ranks)
+	}
+
+	if *jsonrsp != "" {
+		DumpJson(jsonrsp, &ranks)
+	}
+	Info.Printf("%04d pages requested.\n", lastPage)
+	Info.Printf("%04d users found.\n", counter)
 }

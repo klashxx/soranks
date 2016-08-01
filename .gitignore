@@ -3,6 +3,9 @@
 *.a
 *.so
 soranks
+resp.json
+resp.md
+
 
 # Folders
 _obj
