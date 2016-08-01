@@ -204,22 +204,35 @@ func DumpJson(path *string, ranks *Ranks) {
 	if err != nil {
 		panic(err)
 	}
-	Trace.Printf("Wrote %d bytes to %s\n", n4, *jsonrsp)
+	Trace.Printf("Wrote %d bytes to %s\n", n4, *path)
 
 	w.Flush()
 }
 
-func DumpMarkdown(ranks Ranks) {
+func DumpMarkdown(path *string, ranks Ranks) {
 	head := "Rank|Name|Rep|Location|Web|Avatar\n----|----|---|--------|---|------\n"
 
 	userfmt := "{{.Rank}}|[{{.DisplayName}}]({{.Link}})|{{.Reputation}}|{{.Location}}|{{.WebsiteURL}}|![Avatar]({{.ProfileImage}})\n"
 
-	fmt.Println(head)
+	f, err := os.Create(*path)
+	if err != nil {
+		panic(err)
+	}
+
+	defer f.Close()
+	w := bufio.NewWriter(f)
+	n4, err := w.WriteString(head)
+	if err != nil {
+		panic(err)
+	}
+	w.Flush()
 
 	tmpl, _ := template.New("test").Parse(userfmt)
 	for _, userRank := range ranks {
-		_ = tmpl.Execute(os.Stdout, userRank)
+		_ = tmpl.Execute(f, userRank)
 	}
+	Trace.Printf("Wrote %d bytes to %s\n", n4, *path)
+	w.Flush()
 }
 
 func GetKey() (key string, err error) {
@@ -302,7 +315,7 @@ func main() {
 	}
 
 	if *mdrsp != "" {
-		DumpMarkdown(ranks)
+		DumpMarkdown(mdrsp, ranks)
 	}
 
 	if *jsonrsp != "" {
