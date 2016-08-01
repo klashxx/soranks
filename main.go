@@ -57,6 +57,19 @@ type SOUsers struct {
 	QuotaRemaining int  `json:"quota_remaining"`
 }
 
+type SOUserRank struct {
+	Rank         int    `json:"rank"`
+	AccountID    int    `json:"account_id"`
+	DisplayName  string `json:"display_name"`
+	Reputation   int    `json:"reputation"`
+	Location     string `json:"location,omitempty"`
+	WebsiteURL   string `json:"website_url,omitempty"`
+	Link         string `json:"link"`
+	ProfileImage string `json:"profile_image"`
+}
+
+type Ranks []SOUserRank
+
 var (
 	Trace    *log.Logger
 	Info     *log.Logger
@@ -140,7 +153,7 @@ func StreamFile(jsonfile string) (users *SOUsers, err error) {
 	return Decode(reader)
 }
 
-func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit int) (rep bool) {
+func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit int, ranks *Ranks) (rep bool) {
 
 	for _, user := range users.Items {
 		if user.Reputation < MinReputation {
@@ -155,6 +168,16 @@ func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit in
 			if *counter > limit && limit != 0 {
 				return false
 			}
+			s := SOUserRank{Rank: *counter,
+				AccountID:    user.AccountID,
+				DisplayName:  user.DisplayName,
+				Reputation:   user.Reputation,
+				Location:     user.Location,
+				WebsiteURL:   user.WebsiteURL,
+				Link:         user.Link,
+				ProfileImage: user.ProfileImage}
+
+			*ranks = append(*ranks, s)
 
 			fmt.Printf("%4d %-30s %6d %-30s %s\n", *counter, html.UnescapeString(user.DisplayName),
 				user.Reputation, html.UnescapeString(user.Location), user.WebsiteURL)
@@ -195,6 +218,7 @@ func main() {
 	counter := 0
 
 	var users *SOUsers
+	var ranks Ranks
 
 	for {
 		if *jsonfile == "" {
@@ -223,7 +247,7 @@ func main() {
 			stop = true
 		}
 
-		repLimit := GetUserInfo(users, re, &counter, *limit)
+		repLimit := GetUserInfo(users, re, &counter, *limit, &ranks)
 		if !repLimit {
 			break
 		}
