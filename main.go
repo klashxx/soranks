@@ -14,6 +14,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"text/template"
 )
 
 const (
@@ -207,6 +208,13 @@ func DumpJson(path *string, ranks *Ranks) {
 	w.Flush()
 }
 
+func DumpMarkdown(ranks Ranks) {
+	tmpl, _ := template.New("test").Parse("{{.Rank}} items are made of {{.DisplayName}}\n")
+	for _, userRank := range ranks {
+		_ = tmpl.Execute(os.Stdout, userRank)
+	}
+}
+
 func GetKey() (key string, err error) {
 	_, err = os.Stat(APIKeyPath)
 
@@ -284,6 +292,8 @@ func main() {
 		Warning.Println("No results found.")
 		os.Exit(0)
 	}
+
+	DumpMarkdown(ranks)
 
 	if *jsonrsp != "" {
 		DumpJson(jsonrsp, &ranks)
