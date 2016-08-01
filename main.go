@@ -12,7 +12,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path"
 	"regexp"
 	"strings"
 	"text/template"
@@ -353,7 +352,7 @@ func GetKey(path string) (key string) {
 
 func StreamHTTP2(url string) (repo *Repo, err error) {
 
-	Info.Println(url)
+	Trace.Println(url)
 
 	var reader io.ReadCloser
 	req, err := http.NewRequest("GET", url, nil)
@@ -392,8 +391,7 @@ func Decode2(r io.Reader) (repo *Repo, err error) {
 
 func GitHubIntegration() {
 	//_ = GetKey(GitHubToken)
-	bmdrsp := path.Base(*mdrsp)
-	Trace.Printf("base md: %s\n", bmdrsp)
+
 	url := fmt.Sprintf("%s%s", GHApiURL, "/git/trees/dev")
 
 	repo, _ := StreamHTTP2(url)
@@ -404,9 +402,27 @@ func GitHubIntegration() {
 		}
 	}
 
+	var md string
+	if *location == "." {
+		md = "global.md"
+	} else {
+		md = fmt.Sprintf("%s.md", *location)
+	}
+	Trace.Printf("base md: %s\n", md)
+
+	sha := ""
 	repo, _ = StreamHTTP2(url)
 	for _, file := range repo.Tree {
-		Trace.Println(file)
+		if file.Path == md {
+			sha = file.Sha
+			break
+		}
+	}
+
+	if sha == "" {
+		Info.Println("Update not detected.")
+	} else {
+		Info.Printf("Update SHA: %s", sha)
 	}
 }
 
