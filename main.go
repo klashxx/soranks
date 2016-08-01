@@ -238,19 +238,21 @@ func DumpMarkdown(path *string, ranks Ranks) {
 	w.Flush()
 }
 
-func GetKey() (key string, err error) {
-	_, err = os.Stat(APIKeyPath)
+func GetKey() (key string) {
 
+	_, err := os.Stat(APIKeyPath)
 	if err != nil {
-		return "", fmt.Errorf("Can't find API key: %s", APIKeyPath)
+		Warning.Printf("Can't find API key: %s", APIKeyPath)
+		return ""
 	}
 
 	strkey, err := ioutil.ReadFile(APIKeyPath)
 	if err != nil {
-		return "", fmt.Errorf("Can't load API key: %s", err)
+		Warning.Printf("Can't load API key: %s", err)
+		return ""
 	}
 
-	return fmt.Sprintf("&key=%s", strings.TrimRight(string(strkey)[:], "\n")), nil
+	return fmt.Sprintf("&key=%s", strings.TrimRight(string(strkey)[:], "\n"))
 }
 
 func main() {
@@ -270,6 +272,7 @@ func main() {
 	stop := false
 	streamErrors := 0
 	currentPage := 1
+	lastPage := currentPage
 	counter := 0
 
 	var users *SOUsers
@@ -277,11 +280,11 @@ func main() {
 
 	for {
 		if *jsonfile == "" {
-			key, err := GetKey()
-			if err != nil {
-				Warning.Println(err)
+			var key string
+			if lastPage == currentPage {
+				key = GetKey()
 			}
-			users, err = StreamHTTP(currentPage, key)
+			users, err := StreamHTTP(currentPage, key)
 			if err != nil || len(users.Items) == 0 {
 
 				Warning.Println("Can't stream data.")
@@ -307,6 +310,7 @@ func main() {
 			break
 		}
 
+		lastPage = currentPage
 		currentPage += 1
 		if (currentPage >= MaxPages && MaxPages != 0) || !users.HasMore || stop {
 			break
