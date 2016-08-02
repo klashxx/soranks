@@ -154,7 +154,7 @@ var (
 	mdrsp    = flag.String("mdrsp", "", "markdown response file")
 	limit    = flag.Int("limit", 20, "max number of records")
 	term     = flag.Bool("term", false, "print output in terminal")
-	publish  = flag.Bool("publish", false, "publish ranks in Github")
+	publish  = flag.String("publish", "", "publish ranks in Github")
 )
 
 func Init(
@@ -389,26 +389,26 @@ func Decode2(r io.Reader) (repo *Repo, err error) {
 	return repo, json.NewDecoder(r).Decode(repo)
 }
 
-func GitHubIntegration() {
+func GitHubIntegration(md string) (err error) {
 	//_ = GetKey(GitHubToken)
 
 	url := fmt.Sprintf("%s%s", GHApiURL, "/git/trees/dev")
+	Trace.Printf("Tree url: %s\n", url)
 
+	folder := false
 	repo, _ := StreamHTTP2(url)
 	for _, file := range repo.Tree {
 		if file.Path == "data" {
 			url = file.URL
+			folder = true
 			break
 		}
 	}
-
-	var md string
-	if *location == "." {
-		md = "global.md"
-	} else {
-		md = fmt.Sprintf("%s.md", *location)
+	if !folder {
+		fmt.Errorf("Cant't get data folder url")
 	}
-	Trace.Printf("base md: %s\n", md)
+
+	Trace.Printf("md: %s\n", md)
 
 	sha := ""
 	repo, _ = StreamHTTP2(url)
@@ -424,6 +424,8 @@ func GitHubIntegration() {
 	} else {
 		Info.Printf("Update SHA: %s", sha)
 	}
+
+	return nil
 }
 
 func main() {
@@ -507,8 +509,8 @@ func main() {
 
 	if *mdrsp != "" {
 		DumpMarkdown(mdrsp, ranks)
-		if *publish {
-			GitHubIntegration()
+		if *publish != "" {
+			_ = GitHubIntegration(*publish)
 		}
 	}
 
