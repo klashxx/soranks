@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"encoding/base64"
 	"encoding/json"
@@ -27,7 +28,7 @@ const (
 	GitHubToken   = "./_secret/token"
 	SOApiURL      = "https://api.stackexchange.com/2.2/users?page="
 	SOQuery       = "pagesize=100&order=desc&sort=reputation&site=stackoverflow"
-	GHApiURL      = "https://api.github.com/repos/klashxx/soranks"
+	GHApiURL      = "https://api.github.com/repos/klashxx/soranks/contents/data"
 )
 
 type SOUsers struct {
@@ -423,13 +424,15 @@ func Markdown2Base64(path string) (b64 string, err error) {
 	return base64.StdEncoding.EncodeToString(mdraw), nil
 }
 
-func DataToGihub(data interface{}) string {
-	jsonenc, err := json.MarshalIndent(data, "", " ")
+func DataToGihub(data interface{}) (buf io.ReadWriter, err error) {
+
+	buf = new(bytes.Buffer)
+	err = json.NewEncoder(buf).Encode(data)
 	if err != nil {
-		Error.Println(err)
-		os.Exit(5)
+		return nil, err
 	}
-	return string(jsonenc)
+	return buf, nil
+
 }
 
 func GitHubIntegration(md string) (err error) {
@@ -467,7 +470,18 @@ func GitHubIntegration(md string) (err error) {
 		}
 	}
 
-	jsondata := ""
+	url = fmt.Sprintf("%s/%s", GHApiURL, md)
+	Trace.Println(url)
+
+	token := GetKey(GitHubToken)
+	if token == "" {
+		Error.Println("Can't get github  token!")
+		os.Exit(5)
+	}
+	Info.Printf("token: %s\n", token)
+
+	var buf io.ReadWriter
+
 	if sha == "" {
 		Info.Println("Update not detected.")
 		data := Create{
@@ -476,7 +490,7 @@ func GitHubIntegration(md string) (err error) {
 			Content:   encoded,
 			Branch:    branch,
 			Committer: author}
-		jsondata = DataToGihub(data)
+		buf, _ = DataToGihub(data)
 	} else {
 		Info.Printf("Update SHA: %s", sha)
 		data := Update{
@@ -486,17 +500,18 @@ func GitHubIntegration(md string) (err error) {
 			Sha:       sha,
 			Branch:    branch,
 			Committer: author}
-		jsondata = DataToGihub(data)
+		buf, _ = DataToGihub(data)
 	}
 
-	Trace.Println(jsondata)
-
-	token := GetKey(GitHubToken)
-	if token == "" {
-		Error.Println("Can't get github  token!")
-		os.Exit(5)
+	req, err := http.NewRequest("PUT", url, buf)
+	if err != nil {
+		Trace.Println(err)
 	}
-	Info.Printf("token: %s\n", token)
+	Trace.Println("Sending header.")
+	req.Header.Set("Authorization", fmt.Sprintf("token %s", token))
+
+	// PUT /repos/:owner/:repo/contents/:path
+	// https://api.github.com/repos/klashxx/soranks/contents/data/global.md
 
 	return nil
 }
