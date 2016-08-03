@@ -171,6 +171,8 @@ var (
 	Info     *log.Logger
 	Warning  *log.Logger
 	Error    *log.Logger
+	author   = Committer{Name: "klasxx", Email: "klashxx@gmail.com"}
+	branch   = "dev"
 	location = flag.String("location", ".", "location")
 	jsonfile = flag.String("json", "", "json sample file")
 	jsonrsp  = flag.String("jsonrsp", "", "json response file")
@@ -424,6 +426,12 @@ func Markdown2Base64(path string) (b64 string, err error) {
 func GitHubIntegration(md string) (err error) {
 	//_ = GetKey(GitHubToken)
 
+	_, err = Markdown2Base64(*mdrsp)
+	if err != nil {
+		Error.Println(err)
+		os.Exit(5)
+	}
+
 	url := fmt.Sprintf("%s%s", GHApiURL, "/git/trees/dev")
 	Trace.Printf("Tree url: %s\n", url)
 
@@ -451,11 +459,9 @@ func GitHubIntegration(md string) (err error) {
 		}
 	}
 
-	method := "UPDATE"
-
 	if sha == "" {
 		Info.Println("Update not detected.")
-		method := "CREATE"
+		return nil
 	} else {
 		Info.Printf("Update SHA: %s", sha)
 	}
