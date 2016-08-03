@@ -2,7 +2,9 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"compress/gzip"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -26,7 +28,7 @@ const (
 	GitHubToken   = "./_secret/token"
 	SOApiURL      = "https://api.stackexchange.com/2.2/users?page="
 	SOQuery       = "pagesize=100&order=desc&sort=reputation&site=stackoverflow"
-	GHApiURL      = "https://api.github.com/repos/klashxx/soranks"
+	GHApiURL      = "https://api.github.com/repos/klashxx/soranks/contents/data"
 )
 
 type SOUsers struct {
@@ -143,17 +145,42 @@ type Repo struct {
 	Truncated bool `json:"truncated"`
 }
 
+type Create struct {
+	Path      string `json:"path"`
+	Message   string `json:"message"`
+	Content   string `json:"content"`
+	Branch    string `json:"branch"`
+	Committer `json:"committer"`
+}
+
+type Update struct {
+	Path      string `json:"path"`
+	Message   string `json:"message"`
+	Content   string `json:"content"`
+	Sha       string `json:"sha"`
+	Branch    string `json:"branch"`
+	Committer `json:"committer"`
+}
+
+type Committer struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
 var (
 	Trace    *log.Logger
 	Info     *log.Logger
 	Warning  *log.Logger
 	Error    *log.Logger
+	author   = Committer{Name: "klasxx", Email: "klashxx@gmail.com"}
+	branch   = "dev"
 	location = flag.String("location", ".", "location")
 	jsonfile = flag.String("json", "", "json sample file")
 	jsonrsp  = flag.String("jsonrsp", "", "json response file")
 	mdrsp    = flag.String("mdrsp", "", "markdown response file")
 	limit    = flag.Int("limit", 20, "max number of records")
 	term     = flag.Bool("term", false, "print output in terminal")
+	publish  = flag.String("publish", "", "publish ranks in Github")
 )
 
 func Init(
@@ -351,7 +378,7 @@ func GetKey(path string) (key string) {
 
 func StreamHTTP2(url string) (repo *Repo, err error) {
 
-	Info.Println(url)
+	Trace.Println(url)
 
 	var reader io.ReadCloser
 	req, err := http.NewRequest("GET", url, nil)
@@ -388,6 +415,107 @@ func Decode2(r io.Reader) (repo *Repo, err error) {
 	return repo, json.NewDecoder(r).Decode(repo)
 }
 
+func Markdown2Base64(path string) (b64 string, err error) {
+
+	mdraw, err := ioutil.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("Can't load markdown: %s", err)
+	}
+	return base64.StdEncoding.EncodeToString(mdraw), nil
+}
+
+func DataToGihub(data interface{}) (buf io.ReadWriter, err error) {
+
+	buf = new(bytes.Buffer)
+	err = json.NewEncoder(buf).Encode(data)
+	if err != nil {
+		return nil, err
+	}
+	return buf, nil
+
+}
+
+func GitHubIntegration(md string) (err error) {
+
+	encoded, err := Markdown2Base64(*mdrsp)
+	if err != nil {
+		Error.Println(err)
+		os.Exit(5)
+	}
+
+	url := fmt.Sprintf("%s%s", GHApiURL, "/git/trees/dev")
+	Trace.Printf("Tree url: %s\n", url)
+
+	folder := false
+	repo, _ := StreamHTTP2(url)
+	for _, file := range repo.Tree {
+		if file.Path == "data" {
+			url = file.URL
+			folder = true
+			break
+		}
+	}
+	if !folder {
+		fmt.Errorf("Cant't get data folder url")
+	}
+
+	Trace.Printf("md: %s\n", md)
+
+	sha := ""
+	repo, _ = StreamHTTP2(url)
+	for _, file := range repo.Tree {
+		if file.Path == md {
+			sha = file.Sha
+			break
+		}
+	}
+
+	url = fmt.Sprintf("%s/%s", GHApiURL, md)
+	Trace.Println(url)
+
+	token := GetKey(GitHubToken)
+	if token == "" {
+		Error.Println("Can't get github  token!")
+		os.Exit(5)
+	}
+	Info.Printf("token: %s\n", token)
+
+	var buf io.ReadWriter
+
+	if sha == "" {
+		Info.Println("Update not detected.")
+		data := Create{
+			Path:      *mdrsp,
+			Message:   "test",
+			Content:   encoded,
+			Branch:    branch,
+			Committer: author}
+		buf, _ = DataToGihub(data)
+	} else {
+		Info.Printf("Update SHA: %s", sha)
+		data := Update{
+			Path:      *mdrsp,
+			Message:   "test",
+			Content:   encoded,
+			Sha:       sha,
+			Branch:    branch,
+			Committer: author}
+		buf, _ = DataToGihub(data)
+	}
+
+	req, err := http.NewRequest("PUT", url, buf)
+	if err != nil {
+		Trace.Println(err)
+	}
+	Trace.Println("Sending header.")
+	req.Header.Set("Authorization", fmt.Sprintf("token %s", token))
+
+	// PUT /repos/:owner/:repo/contents/:path
+	// https://api.github.com/repos/klashxx/soranks/contents/data/global.md
+
+	return nil
+}
+
 func main() {
 	flag.Parse()
 
@@ -399,6 +527,12 @@ func main() {
 	Trace.Println("mdrsp: ", *mdrsp)
 	Trace.Println("limit: ", *limit)
 	Trace.Println("term: ", *term)
+	Trace.Println("publish: ", *publish)
+
+	if *publish != "" && *mdrsp == "" {
+		Error.Println("Publish requires mdrsp!!")
+		os.Exit(5)
+	}
 
 	re := regexp.MustCompile(fmt.Sprintf("(?i)%s", *location))
 
@@ -468,28 +602,15 @@ func main() {
 
 	if *mdrsp != "" {
 		DumpMarkdown(mdrsp, ranks)
+		if *publish != "" {
+			_ = GitHubIntegration(*publish)
+		}
 	}
 
 	if *jsonrsp != "" {
 		DumpJson(jsonrsp, &ranks)
 	}
+
 	Info.Printf("%04d pages requested.\n", lastPage)
 	Info.Printf("%04d users found.\n", counter)
-
-	//_ = GetKey(GitHubToken)
-	url := fmt.Sprintf("%s%s", GHApiURL, "/git/trees/dev")
-
-	repo, _ := StreamHTTP2(url)
-	for _, file := range repo.Tree {
-		if file.Path == "data" {
-			url = file.URL
-			break
-		}
-	}
-
-	repo, _ = StreamHTTP2(url)
-	for _, file := range repo.Tree {
-		Trace.Println(file)
-	}
-
 }
