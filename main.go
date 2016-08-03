@@ -28,7 +28,7 @@ const (
 	GitHubToken   = "./_secret/token"
 	SOApiURL      = "https://api.stackexchange.com/2.2/users?page="
 	SOQuery       = "pagesize=100&order=desc&sort=reputation&site=stackoverflow"
-	GHApiURL      = "https://api.github.com/repos/klashxx/soranks/contents/data"
+	GHApiURL      = "https://api.github.com/repos/klashxx/soranks"
 )
 
 type SOUsers struct {
@@ -129,6 +129,11 @@ type GitHubUpdateRsp struct {
 			Sha     string `json:"sha"`
 		} `json:"parents"`
 	} `json:"commit"`
+}
+
+type GHReqError struct {
+	Message          string `json:"message"`
+	DocumentationURL string `json:"documentation_url"`
 }
 
 type Repo struct {
@@ -415,6 +420,12 @@ func Decode2(r io.Reader) (repo *Repo, err error) {
 	return repo, json.NewDecoder(r).Decode(repo)
 }
 
+func Decode3(r io.Reader) (up *GHReqError, err error) {
+
+	up = new(GHReqError)
+	return up, json.NewDecoder(r).Decode(up)
+}
+
 func Markdown2Base64(path string) (b64 string, err error) {
 
 	mdraw, err := ioutil.ReadFile(path)
@@ -470,7 +481,7 @@ func GitHubIntegration(md string) (err error) {
 		}
 	}
 
-	url = fmt.Sprintf("%s/%s", GHApiURL, md)
+	url = fmt.Sprintf("%s/contents/data/%s", GHApiURL, md)
 	Trace.Println(url)
 
 	token := GetKey(GitHubToken)
@@ -510,8 +521,17 @@ func GitHubIntegration(md string) (err error) {
 	Trace.Println("Sending header.")
 	req.Header.Set("Authorization", fmt.Sprintf("token %s", token))
 
-	// PUT /repos/:owner/:repo/contents/:path
-	// https://api.github.com/repos/klashxx/soranks/contents/data/global.md
+	response, err := http.DefaultClient.Do(req)
+	if err != nil {
+		Trace.Println(err)
+	}
+	Trace.Println("Response.")
+
+	defer response.Body.Close()
+
+	respstring, _ := Decode3(response.Body)
+
+	Trace.Println(respstring)
 
 	return nil
 }
