@@ -433,7 +433,6 @@ func DataToGihub(data interface{}) string {
 }
 
 func GitHubIntegration(md string) (err error) {
-	//_ = GetKey(GitHubToken)
 
 	encoded, err := Markdown2Base64(*mdrsp)
 	if err != nil {
@@ -491,6 +490,13 @@ func GitHubIntegration(md string) (err error) {
 	}
 
 	Trace.Println(jsondata)
+
+	token := GetKey(GitHubToken)
+	if token == "" {
+		Error.Println("Can't get github  token!")
+		os.Exit(5)
+	}
+	Info.Printf("token: %s\n", token)
 
 	return nil
 }
