@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"compress/gzip"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -400,6 +401,15 @@ func Decode2(r io.Reader) (repo *Repo, err error) {
 	return repo, json.NewDecoder(r).Decode(repo)
 }
 
+func Markdown2Base64(path string) (b64 string, err error) {
+
+	mdraw, err := ioutil.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("Can't load markdown: %s", err)
+	}
+	return base64.StdEncoding.EncodeToString(mdraw), nil
+}
+
 func GitHubIntegration(md string) (err error) {
 	//_ = GetKey(GitHubToken)
 
@@ -451,6 +461,11 @@ func main() {
 	Trace.Println("limit: ", *limit)
 	Trace.Println("term: ", *term)
 	Trace.Println("publish: ", *publish)
+
+	if *publish != "" && *mdrsp == "" {
+		Error.Println("Publish requires mdrsp!!")
+		os.Exit(5)
+	}
 
 	re := regexp.MustCompile(fmt.Sprintf("(?i)%s", *location))
 
