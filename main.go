@@ -145,7 +145,7 @@ type Repo struct {
 }
 
 type Create struct {
-	Path      string `json:"message"`
+	Path      string `json:"path"`
 	Message   string `json:"message"`
 	Content   string `json:"content"`
 	Branch    string `json:"branch"`
@@ -153,7 +153,7 @@ type Create struct {
 }
 
 type Update struct {
-	Path      string `json:"message"`
+	Path      string `json:"path"`
 	Message   string `json:"message"`
 	Content   string `json:"content"`
 	Sha       string `json:"sha"`
@@ -423,10 +423,19 @@ func Markdown2Base64(path string) (b64 string, err error) {
 	return base64.StdEncoding.EncodeToString(mdraw), nil
 }
 
+func DataToGihub(data interface{}) string {
+	jsonenc, err := json.MarshalIndent(data, "", " ")
+	if err != nil {
+		Error.Println(err)
+		os.Exit(5)
+	}
+	return string(jsonenc)
+}
+
 func GitHubIntegration(md string) (err error) {
 	//_ = GetKey(GitHubToken)
 
-	_, err = Markdown2Base64(*mdrsp)
+	encoded, err := Markdown2Base64(*mdrsp)
 	if err != nil {
 		Error.Println(err)
 		os.Exit(5)
@@ -459,12 +468,29 @@ func GitHubIntegration(md string) (err error) {
 		}
 	}
 
+	jsondata := ""
 	if sha == "" {
 		Info.Println("Update not detected.")
-		return nil
+		data := Create{
+			Path:      *mdrsp,
+			Message:   "test",
+			Content:   encoded,
+			Branch:    branch,
+			Committer: author}
+		jsondata = DataToGihub(data)
 	} else {
 		Info.Printf("Update SHA: %s", sha)
+		data := Update{
+			Path:      *mdrsp,
+			Message:   "test",
+			Content:   encoded,
+			Sha:       sha,
+			Branch:    branch,
+			Committer: author}
+		jsondata = DataToGihub(data)
 	}
+
+	Trace.Println(jsondata)
 
 	return nil
 }
