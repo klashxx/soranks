@@ -144,12 +144,21 @@ type Repo struct {
 	Truncated bool `json:"truncated"`
 }
 
-type Commit struct {
+type Create struct {
+	Path      string `json:"message"`
 	Message   string `json:"message"`
+	Content   string `json:"content"`
+	Branch    string `json:"branch"`
 	Committer `json:"committer"`
+}
+
+type Update struct {
+	Path      string `json:"message"`
+	Message   string `json:"message"`
 	Content   string `json:"content"`
 	Sha       string `json:"sha"`
 	Branch    string `json:"branch"`
+	Committer `json:"committer"`
 }
 
 type Committer struct {
@@ -442,8 +451,11 @@ func GitHubIntegration(md string) (err error) {
 		}
 	}
 
+	method := "UPDATE"
+
 	if sha == "" {
 		Info.Println("Update not detected.")
+		method := "CREATE"
 	} else {
 		Info.Printf("Update SHA: %s", sha)
 	}
