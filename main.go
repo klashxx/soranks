@@ -143,6 +143,17 @@ type Repo struct {
 	Truncated bool `json:"truncated"`
 }
 
+type Commit struct {
+	Message   string `json:"message"`
+	Committer struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	} `json:"committer"`
+	Content string `json:"content"`
+	Sha     string `json:"sha"`
+	Branch  string `json:"branch"`
+}
+
 var (
 	Trace    *log.Logger
 	Info     *log.Logger
