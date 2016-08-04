@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -19,8 +17,8 @@ const (
 	MaxErrors     = 3
 	MaxPages      = 1
 	MinReputation = 400
-	APIKeyPath    = "./_secret/api.key"
-	GitHubToken   = "./_secret/token"
+	APIKeyPath    = "../_secret/api.key"
+	GitHubToken   = "../_secret/token"
 	SOApiURL      = "https://api.stackexchange.com/2.2/users?page="
 	SOQuery       = "pagesize=100&order=desc&sort=reputation&site=stackoverflow"
 	GHApiURL      = "https://api.github.com/repos/klashxx/soranks"
@@ -63,17 +61,6 @@ func Init(
 	Error = log.New(errorHandle,
 		"ERROR: ",
 		log.Ldate|log.Ltime|log.Lshortfile)
-
-}
-
-func DataToGihub(data interface{}) (buf io.ReadWriter, err error) {
-
-	buf = new(bytes.Buffer)
-	err = json.NewEncoder(buf).Encode(data)
-	if err != nil {
-		return nil, err
-	}
-	return buf, nil
 
 }
 
@@ -132,7 +119,7 @@ func GitHubIntegration(md string) (err error) {
 			Content:   encoded,
 			Branch:    branch,
 			Committer: author}
-		buf, _ = DataToGihub(data)
+		buf, _ = lib.DataToGihub(data)
 	} else {
 		Info.Printf("Update SHA: %s", sha)
 		data := lib.Update{
@@ -142,7 +129,7 @@ func GitHubIntegration(md string) (err error) {
 			Sha:       sha,
 			Branch:    branch,
 			Committer: author}
-		buf, _ = DataToGihub(data)
+		buf, _ = lib.DataToGihub(data)
 	}
 
 	req, err := http.NewRequest("PUT", url, buf)
