@@ -1,7 +1,6 @@
 package lib
 
 import (
-	"fmt"
 	"html"
 	"regexp"
 )
@@ -9,15 +8,15 @@ import (
 func GetUserInfo(users *SOUsers, min int, location *regexp.Regexp, counter *int, limit int, ranks *Ranks, term bool) (rep bool) {
 
 	for _, user := range users.Items {
-		//Trace.Printf("Procesing user: %d\n", user.AccountID)
+		Trace.Printf("Procesing user: %d\n", user.AccountID)
 		if user.Reputation < min {
 			return false
 		}
 		if location.MatchString(user.Location) {
 			*counter += 1
 			if *counter == 1 && term {
-				fmt.Println("User data:")
-				fmt.Printf("%4s %-30s %6s %s\n", "Rank", "Name", "Rep", "Location")
+				Info.Println("User data:")
+				Info.Printf("%4s %-30s %6s %s\n", "Rank", "Name", "Rep", "Location")
 			}
 
 			s := SOUserRank{Rank: *counter,
@@ -32,7 +31,7 @@ func GetUserInfo(users *SOUsers, min int, location *regexp.Regexp, counter *int,
 			*ranks = append(*ranks, s)
 
 			if term {
-				fmt.Printf("%4d %-30s %6d %s\n", *counter, html.UnescapeString(user.DisplayName),
+				Info.Printf("%4d %-30s %6d %s\n", *counter, html.UnescapeString(user.DisplayName),
 					user.Reputation, html.UnescapeString(user.Location))
 			}
 

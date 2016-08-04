@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"regexp"
@@ -15,8 +14,8 @@ import (
 
 const (
 	MaxErrors     = 3
-	MaxPages      = 1
-	MinReputation = 400
+	MaxPages      = 1100
+	MinReputation = 500
 	APIKeyPath    = "../_secret/api.key"
 	GitHubToken   = "../_secret/token"
 	SOApiURL      = "https://api.stackexchange.com/2.2/users?page="
@@ -25,10 +24,6 @@ const (
 )
 
 var (
-	Trace    *log.Logger
-	Info     *log.Logger
-	Warning  *log.Logger
-	Error    *log.Logger
 	author   = lib.Committer{Name: "klasxx", Email: "klashxx@gmail.com"}
 	branch   = "dev"
 	location = flag.String("location", ".", "location")
@@ -40,40 +35,16 @@ var (
 	publish  = flag.String("publish", "", "publish ranks in Github")
 )
 
-func Init(
-	traceHandle io.Writer,
-	infoHandle io.Writer,
-	warningHandle io.Writer,
-	errorHandle io.Writer) {
-
-	Trace = log.New(traceHandle,
-		"TRACE: ",
-		log.Ldate|log.Ltime|log.Lshortfile)
-
-	Info = log.New(infoHandle,
-		"INFO: ",
-		log.Ldate|log.Ltime|log.Lshortfile)
-
-	Warning = log.New(warningHandle,
-		"WARN: ",
-		log.Ldate|log.Ltime|log.Lshortfile)
-
-	Error = log.New(errorHandle,
-		"ERROR: ",
-		log.Ldate|log.Ltime|log.Lshortfile)
-
-}
-
 func GitHubIntegration(md string) (err error) {
 
 	encoded, err := lib.Markdown2Base64(*mdrsp)
 	if err != nil {
-		Error.Println(err)
+		lib.Error.Println(err)
 		os.Exit(5)
 	}
 
 	url := fmt.Sprintf("%s%s", GHApiURL, "/git/trees/dev")
-	Trace.Printf("Tree url: %s\n", url)
+	lib.Trace.Printf("Tree url: %s\n", url)
 
 	folder := false
 	repo, _ := lib.StreamHTTP2(url)
@@ -88,7 +59,7 @@ func GitHubIntegration(md string) (err error) {
 		fmt.Errorf("Cant't get data folder url")
 	}
 
-	Trace.Printf("md: %s\n", md)
+	lib.Trace.Printf("md: %s\n", md)
 
 	sha := ""
 	repo, _ = lib.StreamHTTP2(url)
@@ -100,19 +71,19 @@ func GitHubIntegration(md string) (err error) {
 	}
 
 	url = fmt.Sprintf("%s/contents/data/%s", GHApiURL, md)
-	Trace.Println(url)
+	lib.Trace.Println(url)
 
 	token := lib.GetKey(GitHubToken)
 	if token == "" {
-		Error.Println("Can't get github  token!")
+		lib.Error.Println("Can't get github  token!")
 		os.Exit(5)
 	}
-	Info.Printf("token: %s\n", token)
+	lib.Info.Printf("token: %s\n", token)
 
 	var buf io.ReadWriter
 
 	if sha == "" {
-		Info.Println("Update not detected.")
+		lib.Info.Println("Update not detected.")
 		data := lib.Create{
 			Path:      *mdrsp,
 			Message:   "test",
@@ -121,7 +92,7 @@ func GitHubIntegration(md string) (err error) {
 			Committer: author}
 		buf, _ = lib.DataToGihub(data)
 	} else {
-		Info.Printf("Update SHA: %s", sha)
+		lib.Info.Printf("Update SHA: %s", sha)
 		data := lib.Update{
 			Path:      *mdrsp,
 			Message:   "test",
@@ -134,41 +105,41 @@ func GitHubIntegration(md string) (err error) {
 
 	req, err := http.NewRequest("PUT", url, buf)
 	if err != nil {
-		Trace.Println(err)
+		lib.Trace.Println(err)
 	}
-	Trace.Println("Sending header.")
+	lib.Trace.Println("Sending header.")
 	req.Header.Set("Authorization", fmt.Sprintf("token %s", token))
 
 	response, err := http.DefaultClient.Do(req)
 	if err != nil {
-		Trace.Println(err)
+		lib.Trace.Println(err)
 	}
-	Trace.Println("Response.")
+	lib.Trace.Println("Response.")
 
 	defer response.Body.Close()
 
 	respstring, _ := lib.Decode3(response.Body)
 
-	Trace.Println(respstring)
+	lib.Trace.Println(respstring)
 
 	return nil
 }
 
 func main() {
 	flag.Parse()
+	lib.Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 
-	Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
-	Trace.Println("location: ", *location)
-	Trace.Println("json: ", *jsonfile)
-	Trace.Println("jsontest: ", *jsonfile)
-	Trace.Println("jsonrsp: ", *jsonrsp)
-	Trace.Println("mdrsp: ", *mdrsp)
-	Trace.Println("limit: ", *limit)
-	Trace.Println("term: ", *term)
-	Trace.Println("publish: ", *publish)
+	lib.Trace.Println("location: ", *location)
+	lib.Trace.Println("json: ", *jsonfile)
+	lib.Trace.Println("jsontest: ", *jsonfile)
+	lib.Trace.Println("jsonrsp: ", *jsonrsp)
+	lib.Trace.Println("mdrsp: ", *mdrsp)
+	lib.Trace.Println("limit: ", *limit)
+	lib.Trace.Println("term: ", *term)
+	lib.Trace.Println("publish: ", *publish)
 
 	if *publish != "" && *mdrsp == "" {
-		Error.Println("Publish requires mdrsp!!")
+		lib.Error.Println("Publish requires mdrsp!!")
 		os.Exit(5)
 	}
 
@@ -182,49 +153,49 @@ func main() {
 
 	var users *lib.SOUsers
 	var ranks lib.Ranks
+	var key string
+	var err error
 
 	for {
 		if *jsonfile == "" {
-			var key string
-			var err error
 			if lastPage == currentPage {
-				Info.Println("Trying to extract API key.")
+				lib.Info.Println("Trying to extract API key.")
 				key = fmt.Sprintf("&key=%s", lib.GetKey(APIKeyPath))
 			}
 
-			Trace.Printf("Requesting page: %d\n", currentPage)
+			lib.Trace.Printf("Requesting page: %d\n", currentPage)
 
 			users, err = lib.StreamHTTP(currentPage, key, SOApiURL, SOQuery)
 
-			Trace.Printf("Page users: %d\n", len(users.Items))
+			lib.Trace.Printf("Page users: %d\n", len(users.Items))
 			if err != nil || len(users.Items) == 0 {
 
-				Warning.Println("Can't stream data.")
+				lib.Warning.Println("Can't stream data.")
 				streamErrors += 1
 				if streamErrors >= MaxErrors {
-					Error.Println("Max retry number reached")
+					lib.Error.Println("Max retry number reached")
 					os.Exit(5)
 				}
 				continue
 			}
 		} else {
-			Info.Println("Extracting from source JSON file.")
+			lib.Info.Println("Extracting from source JSON file.")
 			var err error
 			users, err = lib.StreamFile(*jsonfile)
 			if err != nil {
-				Error.Println("Can't decode json file.")
+				lib.Error.Println("Can't decode json file.")
 				os.Exit(5)
 			}
 			stop = true
 		}
 
-		Trace.Println("User info extraction.")
+		lib.Trace.Println("User info extraction.")
 
 		repLimit := lib.GetUserInfo(users, MinReputation, re, &counter, *limit, &ranks, *term)
 		if !repLimit {
 			break
 		}
-		Trace.Println("User info extraction done.")
+		lib.Trace.Println("User info extraction done.")
 
 		lastPage = currentPage
 		currentPage += 1
@@ -234,8 +205,12 @@ func main() {
 	}
 
 	if counter == 0 {
-		Warning.Println("No results found.")
+		lib.Warning.Println("No results found.")
 		os.Exit(0)
+	}
+
+	if *jsonrsp != "" {
+		lib.DumpJson(jsonrsp, &ranks)
 	}
 
 	if *mdrsp != "" {
@@ -245,10 +220,6 @@ func main() {
 		}
 	}
 
-	if *jsonrsp != "" {
-		lib.DumpJson(jsonrsp, &ranks)
-	}
-
-	Info.Printf("%04d pages requested.\n", lastPage)
-	Info.Printf("%04d users found.\n", counter)
+	lib.Info.Printf("%04d pages requested.\n", lastPage)
+	lib.Info.Printf("%04d users found.\n", counter)
 }

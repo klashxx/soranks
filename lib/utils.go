@@ -12,13 +12,13 @@ func GetKey(path string) (key string) {
 
 	_, err := os.Stat(path)
 	if err != nil {
-		fmt.Printf("Can't find key: %s\n", path)
+		Error.Printf("Can't find key: %s\n", path)
 		return ""
 	}
 
 	strkey, err := ioutil.ReadFile(path)
 	if err != nil {
-		fmt.Printf("Can't load key: %s\n", err)
+		Error.Printf("Can't load key: %s\n", err)
 		return ""
 	}
 
