@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"compress/gzip"
 	"encoding/base64"
 	"encoding/json"
 	"flag"
@@ -70,45 +69,6 @@ func Init(
 		"ERROR: ",
 		log.Ldate|log.Ltime|log.Lshortfile)
 
-}
-
-func StreamHTTP(page int, key string) (users *lib.SOUsers, err error) {
-
-	var reader io.ReadCloser
-
-	url := fmt.Sprintf("%s%d&%s%s", SOApiURL, page, SOQuery, key)
-	Trace.Println(url)
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		Trace.Println(err)
-		return users, err
-	}
-	Trace.Println("Sending header.")
-
-	req.Header.Set("Accept-Encoding", "gzip")
-
-	response, err := http.DefaultClient.Do(req)
-	if err != nil {
-		Trace.Println(err)
-		return users, err
-	}
-	Trace.Println("Response.")
-
-	defer response.Body.Close()
-
-	switch response.Header.Get("Content-Encoding") {
-	case "gzip":
-		reader, err = gzip.NewReader(response.Body)
-		if err != nil {
-			Trace.Println(err)
-			return users, err
-		}
-		defer reader.Close()
-	default:
-		reader = response.Body
-	}
-	return lib.Decode(reader)
 }
 
 func GetUserInfo(users *lib.SOUsers, location *regexp.Regexp, counter *int, limit int, ranks *lib.Ranks, term bool) (rep bool) {
@@ -229,45 +189,6 @@ func GetKey(path string) (key string) {
 	return strings.TrimRight(string(strkey)[:], "\n")
 }
 
-func StreamHTTP2(url string) (repo *lib.Repo, err error) {
-
-	Trace.Println(url)
-
-	var reader io.ReadCloser
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		Trace.Println(err)
-	}
-	Trace.Println("Sending header.")
-
-	response, err := http.DefaultClient.Do(req)
-	if err != nil {
-		Trace.Println(err)
-	}
-	Trace.Println("Response.")
-
-	defer response.Body.Close()
-
-	switch response.Header.Get("Content-Encoding") {
-	case "gzip":
-		reader, err = gzip.NewReader(response.Body)
-		if err != nil {
-			Trace.Println(err)
-		}
-		defer reader.Close()
-	default:
-		reader = response.Body
-	}
-
-	return lib.Decode2(reader)
-}
-
-func StreamFile(jsonfile string) (users *lib.SOUsers, err error) {
-	reader, err := os.Open(jsonfile)
-	defer reader.Close()
-	return lib.Decode(reader)
-}
-
 func Markdown2Base64(path string) (b64 string, err error) {
 
 	mdraw, err := ioutil.ReadFile(path)
@@ -300,7 +221,7 @@ func GitHubIntegration(md string) (err error) {
 	Trace.Printf("Tree url: %s\n", url)
 
 	folder := false
-	repo, _ := StreamHTTP2(url)
+	repo, _ := lib.StreamHTTP2(url)
 	for _, file := range repo.Tree {
 		if file.Path == "data" {
 			url = file.URL
@@ -315,7 +236,7 @@ func GitHubIntegration(md string) (err error) {
 	Trace.Printf("md: %s\n", md)
 
 	sha := ""
-	repo, _ = StreamHTTP2(url)
+	repo, _ = lib.StreamHTTP2(url)
 	for _, file := range repo.Tree {
 		if file.Path == md {
 			sha = file.Sha
@@ -418,7 +339,7 @@ func main() {
 
 			Trace.Printf("Requesting page: %d\n", currentPage)
 
-			users, err = StreamHTTP(currentPage, key)
+			users, err = lib.StreamHTTP(currentPage, key, SOApiURL, SOQuery)
 
 			Trace.Printf("Page users: %d\n", len(users.Items))
 			if err != nil || len(users.Items) == 0 {
@@ -434,7 +355,7 @@ func main() {
 		} else {
 			Info.Println("Extracting from source JSON file.")
 			var err error
-			users, err = StreamFile(*jsonfile)
+			users, err = lib.StreamFile(*jsonfile)
 			if err != nil {
 				Error.Println("Can't decode json file.")
 				os.Exit(5)
