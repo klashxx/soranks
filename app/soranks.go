@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
@@ -15,7 +14,6 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"text/template"
 
 	"github.com/klashxx/soranks/lib"
 )
@@ -108,68 +106,6 @@ func GetUserInfo(users *lib.SOUsers, location *regexp.Regexp, counter *int, limi
 		}
 	}
 	return true
-}
-
-func DumpJson(path *string, ranks *lib.Ranks) {
-	Trace.Printf("Writing JSON to: %s\n", *path)
-	jsonenc, _ := json.MarshalIndent(*ranks, "", " ")
-	f, err := os.Create(*path)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-	w := bufio.NewWriter(f)
-	n4, err := w.WriteString(string(jsonenc))
-	if err != nil {
-		panic(err)
-	}
-	Trace.Printf("Wrote %d bytes to %s\n", n4, *path)
-
-	w.Flush()
-}
-
-func DumpMarkdown(path *string, ranks lib.Ranks) {
-	Trace.Printf("Writing MD to: %s\n", *path)
-
-	head := `# soranks
-
-[Stackoverflow](http://stackoverflow.com/) rankings by **location**.
-
-### Area%s
-
-
-Rank|Name|Rep|Location|Web|Avatar
-----|----|---|--------|---|------
-`
-	var fmtLocation string
-
-	if *location == "." {
-		fmtLocation = ": WorldWide"
-	} else {
-		fmtLocation = fmt.Sprintf(" *pattern*: %s", *location)
-	}
-
-	userfmt := "{{.Rank}}|[{{.DisplayName}}]({{.Link}})|{{.Reputation}}|{{.Location}}|{{.WebsiteURL}}|![Avatar]({{.ProfileImage}})\n"
-
-	f, err := os.Create(*path)
-	if err != nil {
-		panic(err)
-	}
-
-	defer f.Close()
-	w := bufio.NewWriter(f)
-	n4, err := w.WriteString(fmt.Sprintf(head, fmtLocation))
-	if err != nil {
-		panic(err)
-	}
-	w.Flush()
-
-	tmpl, _ := template.New("Ranking").Parse(userfmt)
-	for _, userRank := range ranks {
-		_ = tmpl.Execute(f, userRank)
-	}
-	Trace.Printf("Wrote %d bytes to %s\n", n4, *path)
-	w.Flush()
 }
 
 func GetKey(path string) (key string) {
@@ -384,14 +320,14 @@ func main() {
 	}
 
 	if *mdrsp != "" {
-		DumpMarkdown(mdrsp, ranks)
+		lib.DumpMarkdown(mdrsp, ranks, location)
 		if *publish != "" {
 			_ = GitHubIntegration(*publish)
 		}
 	}
 
 	if *jsonrsp != "" {
-		DumpJson(jsonrsp, &ranks)
+		lib.DumpJson(jsonrsp, &ranks)
 	}
 
 	Info.Printf("%04d pages requested.\n", lastPage)
