@@ -72,12 +72,6 @@ func Init(
 
 }
 
-func Decode(r io.Reader) (users *lib.SOUsers, err error) {
-
-	users = new(lib.SOUsers)
-	return users, json.NewDecoder(r).Decode(users)
-}
-
 func StreamHTTP(page int, key string) (users *lib.SOUsers, err error) {
 
 	var reader io.ReadCloser
@@ -114,13 +108,7 @@ func StreamHTTP(page int, key string) (users *lib.SOUsers, err error) {
 	default:
 		reader = response.Body
 	}
-	return Decode(reader)
-}
-
-func StreamFile(jsonfile string) (users *lib.SOUsers, err error) {
-	reader, err := os.Open(jsonfile)
-	defer reader.Close()
-	return Decode(reader)
+	return lib.Decode(reader)
 }
 
 func GetUserInfo(users *lib.SOUsers, location *regexp.Regexp, counter *int, limit int, ranks *lib.Ranks, term bool) (rep bool) {
@@ -271,19 +259,13 @@ func StreamHTTP2(url string) (repo *lib.Repo, err error) {
 		reader = response.Body
 	}
 
-	return Decode2(reader)
+	return lib.Decode2(reader)
 }
 
-func Decode2(r io.Reader) (repo *lib.Repo, err error) {
-
-	repo = new(lib.Repo)
-	return repo, json.NewDecoder(r).Decode(repo)
-}
-
-func Decode3(r io.Reader) (up *lib.GHReqError, err error) {
-
-	up = new(lib.GHReqError)
-	return up, json.NewDecoder(r).Decode(up)
+func StreamFile(jsonfile string) (users *lib.SOUsers, err error) {
+	reader, err := os.Open(jsonfile)
+	defer reader.Close()
+	return lib.Decode(reader)
 }
 
 func Markdown2Base64(path string) (b64 string, err error) {
@@ -389,7 +371,7 @@ func GitHubIntegration(md string) (err error) {
 
 	defer response.Body.Close()
 
-	respstring, _ := Decode3(response.Body)
+	respstring, _ := lib.Decode3(response.Body)
 
 	Trace.Println(respstring)
 
