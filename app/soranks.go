@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -13,7 +12,6 @@ import (
 	"net/http"
 	"os"
 	"regexp"
-	"strings"
 
 	"github.com/klashxx/soranks/lib"
 )
@@ -108,32 +106,6 @@ func GetUserInfo(users *lib.SOUsers, location *regexp.Regexp, counter *int, limi
 	return true
 }
 
-func GetKey(path string) (key string) {
-
-	_, err := os.Stat(path)
-	if err != nil {
-		Warning.Printf("Can't find key: %s", path)
-		return ""
-	}
-
-	strkey, err := ioutil.ReadFile(path)
-	if err != nil {
-		Warning.Printf("Can't load key: %s", err)
-		return ""
-	}
-
-	return strings.TrimRight(string(strkey)[:], "\n")
-}
-
-func Markdown2Base64(path string) (b64 string, err error) {
-
-	mdraw, err := ioutil.ReadFile(path)
-	if err != nil {
-		return "", fmt.Errorf("Can't load markdown: %s", err)
-	}
-	return base64.StdEncoding.EncodeToString(mdraw), nil
-}
-
 func DataToGihub(data interface{}) (buf io.ReadWriter, err error) {
 
 	buf = new(bytes.Buffer)
@@ -147,7 +119,7 @@ func DataToGihub(data interface{}) (buf io.ReadWriter, err error) {
 
 func GitHubIntegration(md string) (err error) {
 
-	encoded, err := Markdown2Base64(*mdrsp)
+	encoded, err := lib.Markdown2Base64(*mdrsp)
 	if err != nil {
 		Error.Println(err)
 		os.Exit(5)
@@ -183,7 +155,7 @@ func GitHubIntegration(md string) (err error) {
 	url = fmt.Sprintf("%s/contents/data/%s", GHApiURL, md)
 	Trace.Println(url)
 
-	token := GetKey(GitHubToken)
+	token := lib.GetKey(GitHubToken)
 	if token == "" {
 		Error.Println("Can't get github  token!")
 		os.Exit(5)
@@ -270,7 +242,7 @@ func main() {
 			var err error
 			if lastPage == currentPage {
 				Info.Println("Trying to extract API key.")
-				key = fmt.Sprintf("&key=%s", GetKey(APIKeyPath))
+				key = fmt.Sprintf("&key=%s", lib.GetKey(APIKeyPath))
 			}
 
 			Trace.Printf("Requesting page: %d\n", currentPage)
