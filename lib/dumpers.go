@@ -9,7 +9,7 @@ import (
 )
 
 func DumpJson(path *string, ranks *Ranks) {
-	//Trace.Printf("Writing JSON to: %s\n", *path)
+	Trace.Printf("Writing JSON to: %s\n", *path)
 	jsonenc, _ := json.MarshalIndent(*ranks, "", " ")
 	f, err := os.Create(*path)
 	if err != nil {
@@ -17,17 +17,17 @@ func DumpJson(path *string, ranks *Ranks) {
 	}
 	defer f.Close()
 	w := bufio.NewWriter(f)
-	_, err = w.WriteString(string(jsonenc))
+	n4, err := w.WriteString(string(jsonenc))
 	if err != nil {
 		panic(err)
 	}
-	//Trace.Printf("Wrote %d bytes to %s\n", n4, *path)
+	Trace.Printf("Wrote %d bytes to %s\n", n4, *path)
 
 	w.Flush()
 }
 
 func DumpMarkdown(path *string, ranks Ranks, location *string) {
-	//Trace.Printf("Writing MD to: %s\n", *path)
+	Trace.Printf("Writing MD to: %s\n", *path)
 
 	head := `# soranks
 
@@ -56,7 +56,7 @@ Rank|Name|Rep|Location|Web|Avatar
 
 	defer f.Close()
 	w := bufio.NewWriter(f)
-	_, err = w.WriteString(fmt.Sprintf(head, fmtLocation))
+	n4, err := w.WriteString(fmt.Sprintf(head, fmtLocation))
 	if err != nil {
 		panic(err)
 	}
@@ -66,6 +66,6 @@ Rank|Name|Rep|Location|Web|Avatar
 	for _, userRank := range ranks {
 		_ = tmpl.Execute(f, userRank)
 	}
-	//Trace.Printf("Wrote %d bytes to %s\n", n4, *path)
+	Trace.Printf("Wrote %d bytes to %s\n", n4, *path)
 	w.Flush()
 }
