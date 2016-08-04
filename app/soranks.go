@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"html"
 	"io"
 	"io/ioutil"
 	"log"
@@ -65,45 +64,6 @@ func Init(
 		"ERROR: ",
 		log.Ldate|log.Ltime|log.Lshortfile)
 
-}
-
-func GetUserInfo(users *lib.SOUsers, location *regexp.Regexp, counter *int, limit int, ranks *lib.Ranks, term bool) (rep bool) {
-
-	for _, user := range users.Items {
-		Trace.Printf("Procesing user: %d\n", user.AccountID)
-		if user.Reputation < MinReputation {
-			return false
-		}
-		if location.MatchString(user.Location) {
-			*counter += 1
-			if *counter == 1 && term {
-				Info.Println("User data:")
-				Info.Printf("%4s %-30s %6s %s\n", "Rank", "Name", "Rep", "Location")
-			}
-
-			s := lib.SOUserRank{Rank: *counter,
-				AccountID:    user.AccountID,
-				DisplayName:  user.DisplayName,
-				Reputation:   user.Reputation,
-				Location:     user.Location,
-				WebsiteURL:   user.WebsiteURL,
-				Link:         user.Link,
-				ProfileImage: user.ProfileImage}
-
-			*ranks = append(*ranks, s)
-
-			if term {
-				Info.Printf("%4d %-30s %6d %s\n", *counter, html.UnescapeString(user.DisplayName),
-					user.Reputation, html.UnescapeString(user.Location))
-			}
-
-			if *counter >= limit && limit != 0 {
-				return false
-			}
-
-		}
-	}
-	return true
 }
 
 func DataToGihub(data interface{}) (buf io.ReadWriter, err error) {
@@ -273,7 +233,7 @@ func main() {
 
 		Trace.Println("User info extraction.")
 
-		repLimit := GetUserInfo(users, re, &counter, *limit, &ranks, *term)
+		repLimit := lib.GetUserInfo(users, MinReputation, re, &counter, *limit, &ranks, *term)
 		if !repLimit {
 			break
 		}
