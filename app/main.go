@@ -17,7 +17,8 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
-	"time"
+
+	"github.com/klashxx/soranks/lib"
 )
 
 const (
@@ -31,153 +32,12 @@ const (
 	GHApiURL      = "https://api.github.com/repos/klashxx/soranks"
 )
 
-type SOUsers struct {
-	Items []struct {
-		BadgeCounts struct {
-			Bronze int `json:"bronze"`
-			Silver int `json:"silver"`
-			Gold   int `json:"gold"`
-		} `json:"badge_counts"`
-		AccountID               int    `json:"account_id"`
-		IsEmployee              bool   `json:"is_employee"`
-		LastModifiedDate        int    `json:"last_modified_date"`
-		LastAccessDate          int    `json:"last_access_date"`
-		Age                     int    `json:"age,omitempty"`
-		ReputationChangeYear    int    `json:"reputation_change_year"`
-		ReputationChangeQuarter int    `json:"reputation_change_quarter"`
-		ReputationChangeMonth   int    `json:"reputation_change_month"`
-		ReputationChangeWeek    int    `json:"reputation_change_week"`
-		ReputationChangeDay     int    `json:"reputation_change_day"`
-		Reputation              int    `json:"reputation"`
-		CreationDate            int    `json:"creation_date"`
-		UserType                string `json:"user_type"`
-		UserID                  int    `json:"user_id"`
-		AcceptRate              int    `json:"accept_rate,omitempty"`
-		Location                string `json:"location,omitempty"`
-		WebsiteURL              string `json:"website_url,omitempty"`
-		Link                    string `json:"link"`
-		ProfileImage            string `json:"profile_image"`
-		DisplayName             string `json:"display_name"`
-	} `json:"items"`
-	HasMore        bool `json:"has_more"`
-	QuotaMax       int  `json:"quota_max"`
-	QuotaRemaining int  `json:"quota_remaining"`
-}
-
-type SOUserRank struct {
-	Rank         int    `json:"rank"`
-	AccountID    int    `json:"account_id"`
-	DisplayName  string `json:"display_name"`
-	Reputation   int    `json:"reputation"`
-	Location     string `json:"location,omitempty"`
-	WebsiteURL   string `json:"website_url,omitempty"`
-	Link         string `json:"link"`
-	ProfileImage string `json:"profile_image"`
-}
-
-type Ranks []SOUserRank
-
-type GitHubUpdatePut struct {
-	Message   string `json:"message"`
-	Committer struct {
-		Name  string `json:"name"`
-		Email string `json:"email"`
-	} `json:"committer"`
-	Content string `json:"content"`
-	Sha     string `json:"sha"`
-}
-
-type GitHubUpdateRsp struct {
-	Content struct {
-		Name        string `json:"name"`
-		Path        string `json:"path"`
-		Sha         string `json:"sha"`
-		Size        int    `json:"size"`
-		URL         string `json:"url"`
-		HTMLURL     string `json:"html_url"`
-		GitURL      string `json:"git_url"`
-		DownloadURL string `json:"download_url"`
-		Type        string `json:"type"`
-		Links       struct {
-			Self string `json:"self"`
-			Git  string `json:"git"`
-			HTML string `json:"html"`
-		} `json:"_links"`
-	} `json:"content"`
-	Commit struct {
-		Sha     string `json:"sha"`
-		URL     string `json:"url"`
-		HTMLURL string `json:"html_url"`
-		Author  struct {
-			Date  time.Time `json:"date"`
-			Name  string    `json:"name"`
-			Email string    `json:"email"`
-		} `json:"author"`
-		Committer struct {
-			Date  time.Time `json:"date"`
-			Name  string    `json:"name"`
-			Email string    `json:"email"`
-		} `json:"committer"`
-		Message string `json:"message"`
-		Tree    struct {
-			URL string `json:"url"`
-			Sha string `json:"sha"`
-		} `json:"tree"`
-		Parents []struct {
-			URL     string `json:"url"`
-			HTMLURL string `json:"html_url"`
-			Sha     string `json:"sha"`
-		} `json:"parents"`
-	} `json:"commit"`
-}
-
-type GHReqError struct {
-	Message          string `json:"message"`
-	DocumentationURL string `json:"documentation_url"`
-}
-
-type Repo struct {
-	Sha  string `json:"sha"`
-	URL  string `json:"url"`
-	Tree []struct {
-		Path string `json:"path"`
-		Mode string `json:"mode"`
-		Type string `json:"type"`
-		Sha  string `json:"sha"`
-		Size int    `json:"size,omitempty"`
-		URL  string `json:"url"`
-	} `json:"tree"`
-	Truncated bool `json:"truncated"`
-}
-
-type Create struct {
-	Path      string `json:"path"`
-	Message   string `json:"message"`
-	Content   string `json:"content"`
-	Branch    string `json:"branch"`
-	Committer `json:"committer"`
-}
-
-type Update struct {
-	Path      string `json:"path"`
-	Message   string `json:"message"`
-	Content   string `json:"content"`
-	Sha       string `json:"sha"`
-	Branch    string `json:"branch"`
-	Committer `json:"committer"`
-}
-
-type Committer struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
-
 var (
 	Trace    *log.Logger
 	Info     *log.Logger
 	Warning  *log.Logger
 	Error    *log.Logger
-	author   = Committer{Name: "klasxx", Email: "klashxx@gmail.com"}
+	author   = lib.Committer{Name: "klasxx", Email: "klashxx@gmail.com"}
 	branch   = "dev"
 	location = flag.String("location", ".", "location")
 	jsonfile = flag.String("json", "", "json sample file")
@@ -212,13 +72,13 @@ func Init(
 
 }
 
-func Decode(r io.Reader) (users *SOUsers, err error) {
+func Decode(r io.Reader) (users *lib.SOUsers, err error) {
 
-	users = new(SOUsers)
+	users = new(lib.SOUsers)
 	return users, json.NewDecoder(r).Decode(users)
 }
 
-func StreamHTTP(page int, key string) (users *SOUsers, err error) {
+func StreamHTTP(page int, key string) (users *lib.SOUsers, err error) {
 
 	var reader io.ReadCloser
 
@@ -257,13 +117,13 @@ func StreamHTTP(page int, key string) (users *SOUsers, err error) {
 	return Decode(reader)
 }
 
-func StreamFile(jsonfile string) (users *SOUsers, err error) {
+func StreamFile(jsonfile string) (users *lib.SOUsers, err error) {
 	reader, err := os.Open(jsonfile)
 	defer reader.Close()
 	return Decode(reader)
 }
 
-func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit int, ranks *Ranks, term bool) (rep bool) {
+func GetUserInfo(users *lib.SOUsers, location *regexp.Regexp, counter *int, limit int, ranks *lib.Ranks, term bool) (rep bool) {
 
 	for _, user := range users.Items {
 		Trace.Printf("Procesing user: %d\n", user.AccountID)
@@ -277,7 +137,7 @@ func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit in
 				Info.Printf("%4s %-30s %6s %s\n", "Rank", "Name", "Rep", "Location")
 			}
 
-			s := SOUserRank{Rank: *counter,
+			s := lib.SOUserRank{Rank: *counter,
 				AccountID:    user.AccountID,
 				DisplayName:  user.DisplayName,
 				Reputation:   user.Reputation,
@@ -302,7 +162,7 @@ func GetUserInfo(users *SOUsers, location *regexp.Regexp, counter *int, limit in
 	return true
 }
 
-func DumpJson(path *string, ranks *Ranks) {
+func DumpJson(path *string, ranks *lib.Ranks) {
 	Trace.Printf("Writing JSON to: %s\n", *path)
 	jsonenc, _ := json.MarshalIndent(*ranks, "", " ")
 	f, err := os.Create(*path)
@@ -320,7 +180,7 @@ func DumpJson(path *string, ranks *Ranks) {
 	w.Flush()
 }
 
-func DumpMarkdown(path *string, ranks Ranks) {
+func DumpMarkdown(path *string, ranks lib.Ranks) {
 	Trace.Printf("Writing MD to: %s\n", *path)
 
 	head := `# soranks
@@ -381,7 +241,7 @@ func GetKey(path string) (key string) {
 	return strings.TrimRight(string(strkey)[:], "\n")
 }
 
-func StreamHTTP2(url string) (repo *Repo, err error) {
+func StreamHTTP2(url string) (repo *lib.Repo, err error) {
 
 	Trace.Println(url)
 
@@ -414,15 +274,15 @@ func StreamHTTP2(url string) (repo *Repo, err error) {
 	return Decode2(reader)
 }
 
-func Decode2(r io.Reader) (repo *Repo, err error) {
+func Decode2(r io.Reader) (repo *lib.Repo, err error) {
 
-	repo = new(Repo)
+	repo = new(lib.Repo)
 	return repo, json.NewDecoder(r).Decode(repo)
 }
 
-func Decode3(r io.Reader) (up *GHReqError, err error) {
+func Decode3(r io.Reader) (up *lib.GHReqError, err error) {
 
-	up = new(GHReqError)
+	up = new(lib.GHReqError)
 	return up, json.NewDecoder(r).Decode(up)
 }
 
@@ -495,7 +355,7 @@ func GitHubIntegration(md string) (err error) {
 
 	if sha == "" {
 		Info.Println("Update not detected.")
-		data := Create{
+		data := lib.Create{
 			Path:      *mdrsp,
 			Message:   "test",
 			Content:   encoded,
@@ -504,7 +364,7 @@ func GitHubIntegration(md string) (err error) {
 		buf, _ = DataToGihub(data)
 	} else {
 		Info.Printf("Update SHA: %s", sha)
-		data := Update{
+		data := lib.Update{
 			Path:      *mdrsp,
 			Message:   "test",
 			Content:   encoded,
@@ -562,8 +422,8 @@ func main() {
 	lastPage := currentPage
 	counter := 0
 
-	var users *SOUsers
-	var ranks Ranks
+	var users *lib.SOUsers
+	var ranks lib.Ranks
 
 	for {
 		if *jsonfile == "" {
