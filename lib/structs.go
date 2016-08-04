@@ -1,6 +1,16 @@
 package lib
 
-import "time"
+import (
+	"log"
+	"time"
+)
+
+var (
+	Trace   *log.Logger
+	Info    *log.Logger
+	Warning *log.Logger
+	Error   *log.Logger
+)
 
 type SOUsers struct {
 	Items []struct {
