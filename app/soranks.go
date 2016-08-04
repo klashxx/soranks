@@ -14,8 +14,8 @@ import (
 
 const (
 	MaxErrors     = 3
-	MaxPages      = 1
-	MinReputation = 400
+	MaxPages      = 1100
+	MinReputation = 500
 	APIKeyPath    = "../_secret/api.key"
 	GitHubToken   = "../_secret/token"
 	SOApiURL      = "https://api.stackexchange.com/2.2/users?page="
@@ -127,8 +127,8 @@ func GitHubIntegration(md string) (err error) {
 
 func main() {
 	flag.Parse()
-
 	lib.Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
+
 	lib.Trace.Println("location: ", *location)
 	lib.Trace.Println("json: ", *jsonfile)
 	lib.Trace.Println("jsontest: ", *jsonfile)
@@ -153,11 +153,11 @@ func main() {
 
 	var users *lib.SOUsers
 	var ranks lib.Ranks
+	var key string
+	var err error
 
 	for {
 		if *jsonfile == "" {
-			var key string
-			var err error
 			if lastPage == currentPage {
 				lib.Info.Println("Trying to extract API key.")
 				key = fmt.Sprintf("&key=%s", lib.GetKey(APIKeyPath))
@@ -209,15 +209,15 @@ func main() {
 		os.Exit(0)
 	}
 
+	if *jsonrsp != "" {
+		lib.DumpJson(jsonrsp, &ranks)
+	}
+
 	if *mdrsp != "" {
 		lib.DumpMarkdown(mdrsp, ranks, location)
 		if *publish != "" {
 			_ = GitHubIntegration(*publish)
 		}
-	}
-
-	if *jsonrsp != "" {
-		lib.DumpJson(jsonrsp, &ranks)
 	}
 
 	lib.Info.Printf("%04d pages requested.\n", lastPage)

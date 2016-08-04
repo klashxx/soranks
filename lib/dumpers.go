@@ -44,7 +44,7 @@ Rank|Name|Rep|Location|Web|Avatar
 	if *location == "." {
 		fmtLocation = ": WorldWide"
 	} else {
-		fmtLocation = fmt.Sprintf(" *pattern*: %s", location)
+		fmtLocation = fmt.Sprintf(" *pattern*: %s", *location)
 	}
 
 	userfmt := "{{.Rank}}|[{{.DisplayName}}]({{.Link}})|{{.Reputation}}|{{.Location}}|{{.WebsiteURL}}|![Avatar]({{.ProfileImage}})\n"
