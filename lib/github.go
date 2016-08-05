@@ -65,7 +65,7 @@ func GitHubConnector(md string, mdfmt string, branch string, author Committer) (
 			Content:   encoded,
 			Branch:    branch,
 			Committer: author}
-		buf, _ = DataToGihub(data)
+		buf, _ = Encoder(data)
 	} else {
 		Info.Printf("Update SHA: %s", sha)
 		data := Update{
@@ -75,7 +75,7 @@ func GitHubConnector(md string, mdfmt string, branch string, author Committer) (
 			Sha:       sha,
 			Branch:    branch,
 			Committer: author}
-		buf, _ = DataToGihub(data)
+		buf, _ = Encoder(data)
 	}
 
 	req, err := http.NewRequest("PUT", url, buf)
