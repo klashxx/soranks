@@ -14,7 +14,7 @@ func StreamHTTP(page int, key string, apiurl string, query string) (users *SOUse
 
 	var reader io.ReadCloser
 
-	url := fmt.Sprintf("%s%d&%s%s", apiurl, page, query, key)
+	url := fmt.Sprintf("%s/%s%s", apiurl, fmt.Sprintf(query, page), key)
 	Trace.Println(url)
 
 	req, err := http.NewRequest("GET", url, nil)
