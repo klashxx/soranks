@@ -49,7 +49,8 @@ func GitHubIntegration(md string) (err error) {
 	lib.Trace.Printf("Tree url: %s\n", url)
 
 	folder := false
-	repo, _ := lib.StreamHTTP2(url)
+	repo := new(lib.Repo)
+	_ = lib.StreamHTTP(url, repo, false)
 	for _, file := range repo.Tree {
 		if file.Path == "data" {
 			url = file.URL
@@ -58,13 +59,13 @@ func GitHubIntegration(md string) (err error) {
 		}
 	}
 	if !folder {
-		fmt.Errorf("Cant't get data folder url")
+		return fmt.Errorf("Cant't get data folder url")
 	}
 
 	lib.Trace.Printf("md: %s\n", md)
 
 	sha := ""
-	repo, _ = lib.StreamHTTP2(url)
+	_ = lib.StreamHTTP(url, repo, false)
 	for _, file := range repo.Tree {
 		if file.Path == md {
 			sha = file.Sha
@@ -168,7 +169,11 @@ func main() {
 
 			lib.Trace.Printf("Requesting page: %d\n", currentPage)
 
-			users, err = lib.StreamHTTP(currentPage, key, SOApiURL, SOUsersQuery)
+			url := fmt.Sprintf("%s/%s%s", SOApiURL, fmt.Sprintf(SOUsersQuery, currentPage), key)
+
+			users = new(lib.SOUsers)
+
+			err = lib.StreamHTTP(url, users, true)
 
 			lib.Trace.Printf("Page users: %d\n", len(users.Items))
 			if err != nil || len(users.Items) == 0 {
