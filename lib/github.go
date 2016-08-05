@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func GitHubConnector(apiurl string, md string, mdfmt string, tokenpath string, branch string, author Committer) (err error) {
+func GitHubConnector(md string, mdfmt string, branch string, author Committer) (err error) {
 
 	encoded, err := Markdown2Base64(mdfmt)
 	if err != nil {
@@ -16,7 +16,7 @@ func GitHubConnector(apiurl string, md string, mdfmt string, tokenpath string, b
 		os.Exit(5)
 	}
 
-	url := fmt.Sprintf("%s%s", apiurl, "/git/trees/dev")
+	url := fmt.Sprintf("%s%s", GHApiURL, "/git/trees/dev")
 	Trace.Printf("Tree url: %s\n", url)
 
 	folder := false
@@ -44,10 +44,10 @@ func GitHubConnector(apiurl string, md string, mdfmt string, tokenpath string, b
 		}
 	}
 
-	url = fmt.Sprintf("%s/contents/data/%s", apiurl, md)
+	url = fmt.Sprintf("%s/contents/data/%s", GHApiURL, md)
 	Trace.Println(url)
 
-	token := GetKey(tokenpath)
+	token := GetKey(GitHubToken)
 	if token == "" {
 		Error.Println("Can't get github  token!")
 		os.Exit(5)

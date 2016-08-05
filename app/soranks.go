@@ -14,12 +14,6 @@ const (
 	MaxErrors     = 3
 	MaxPages      = 1100
 	MinReputation = 500
-	APIKeyPath    = "../_secret/api.key"
-	GitHubToken   = "../_secret/token"
-	SOApiURL      = "https://api.stackexchange.com/2.2"
-	SOUsersQuery  = `users?page=%d&pagesize=100&order=desc&sort=reputation&site=stackoverflow`
-	SOUserTags    = `users/%d/top-answer-tags?page=1&pagesize=3&site=stackoverflow`
-	GHApiURL      = "https://api.github.com/repos/klashxx/soranks"
 )
 
 var (
@@ -69,12 +63,12 @@ func main() {
 		if *jsonfile == "" {
 			if lastPage == currentPage {
 				lib.Info.Println("Trying to extract API key.")
-				key = fmt.Sprintf("&key=%s", lib.GetKey(APIKeyPath))
+				key = fmt.Sprintf("&key=%s", lib.GetKey(lib.APIKeyPath))
 			}
 
 			lib.Trace.Printf("Requesting page: %d\n", currentPage)
 
-			url := fmt.Sprintf("%s/%s%s", SOApiURL, fmt.Sprintf(SOUsersQuery, currentPage), key)
+			url := fmt.Sprintf("%s/%s%s", lib.SOApiURL, fmt.Sprintf(lib.SOUsersQuery, currentPage), key)
 
 			users = new(lib.SOUsers)
 
@@ -129,7 +123,7 @@ func main() {
 	if *mdrsp != "" {
 		lib.DumpMarkdown(mdrsp, ranks, location)
 		if *publish != "" {
-			_ = lib.GitHubConnector(GHApiURL, *publish, *mdrsp, GitHubToken, branch, author)
+			_ = lib.GitHubConnector(*publish, *mdrsp, branch, author)
 		}
 	}
 
