@@ -17,3 +17,7 @@ Rank|Name|Rep|Location|Web
 8|[SLaks](http://stackoverflow.com/users/34397/slaks)|527787|New Jersey|[![Web](https://www.gravatar.com/avatar/7deca8ec973c3c0875e9a36e1e3e2c44?s=128&d=identicon&r=PG)](http://SLaks.net)
 9|[Greg Hewgill](http://stackoverflow.com/users/893/greg-hewgill)|497239|Christchurch, New Zealand|[![Web](https://www.gravatar.com/avatar/747ffa5da3538e66840ebc0548b8fd58?s=128&d=identicon&r=PG)](http://hewgill.com)
 10|[Martijn Pieters](http://stackoverflow.com/users/100297/martijn-pieters)|480173|Cambridge, United Kingdom|[![Web](https://www.gravatar.com/avatar/24780fb6df85a943c7aea0402c843737?s=128&d=identicon&r=PG)](http://www.zopatista.com/)
+11|[Quentin](http://stackoverflow.com/users/19068/quentin)|475719|United Kingdom|[![Web](https://www.gravatar.com/avatar/1d2d3229ed1961d2bd81853242493247?s=128&d=identicon&r=PG)]()
+12|[Alex Martelli](http://stackoverflow.com/users/95810/alex-martelli)|465750|Sunnyvale, CA|[![Web](https://www.gravatar.com/avatar/e8d5fe90f1fe2148bf130cccd4dc311c?s=128&d=identicon&r=PG)](http://www.aleax.it)
+13|[T.J. Crowder](http://stackoverflow.com/users/157247/t-j-crowder)|464298|United Kingdom|[![Web](https://www.gravatar.com/avatar/ca3e484c121268e4c8302616b2395eb9?s=128&d=identicon&r=PG)](http://www.farsightsoftware.com)
+14|[Gordon Linoff](http://stackoverflow.com/users/1144035/gordon-linoff)|442814|New York, United States|[![Web](https://www.gravatar.com/avatar/e514b017977ebf742a418cac697d8996?s=128&d=identicon&r=PG)](http://www.data-miners.com)
