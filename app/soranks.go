@@ -18,8 +18,9 @@ const (
 	MinReputation = 500
 	APIKeyPath    = "../_secret/api.key"
 	GitHubToken   = "../_secret/token"
-	SOApiURL      = "https://api.stackexchange.com/2.2/users?page="
-	SOQuery       = "pagesize=100&order=desc&sort=reputation&site=stackoverflow"
+	SOApiURL      = "https://api.stackexchange.com/2.2"
+	SOUsersQuery  = `users?page=%d&pagesize=100&order=desc&sort=reputation&site=stackoverflow`
+	SOUserTags    = `users/%d/top-answer-tags?page=1&pagesize=3&site=stackoverflow`
 	GHApiURL      = "https://api.github.com/repos/klashxx/soranks"
 )
 
@@ -115,12 +116,12 @@ func GitHubIntegration(md string) (err error) {
 		lib.Trace.Println(err)
 	}
 	lib.Trace.Println("Response.")
-
 	defer response.Body.Close()
 
-	respstring, _ := lib.Decode3(response.Body)
+	up := new(lib.GHReqError)
+	_ = lib.Decoder(response.Body, up)
 
-	lib.Trace.Println(respstring)
+	lib.Trace.Println(up)
 
 	return nil
 }
@@ -165,7 +166,7 @@ func main() {
 
 			lib.Trace.Printf("Requesting page: %d\n", currentPage)
 
-			users, err = lib.StreamHTTP(currentPage, key, SOApiURL, SOQuery)
+			users, err = lib.StreamHTTP(currentPage, key, SOApiURL, SOUsersQuery)
 
 			lib.Trace.Printf("Page users: %d\n", len(users.Items))
 			if err != nil || len(users.Items) == 0 {

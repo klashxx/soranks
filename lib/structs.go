@@ -48,6 +48,20 @@ type SOUserRank struct {
 
 type Ranks []SOUserRank
 
+type SOTopTags struct {
+	Items []struct {
+		UserID        int    `json:"user_id"`
+		AnswerCount   int    `json:"answer_count"`
+		AnswerScore   int    `json:"answer_score"`
+		QuestionCount int    `json:"question_count"`
+		QuestionScore int    `json:"question_score"`
+		TagName       string `json:"tag_name"`
+	} `json:"items"`
+	HasMore        bool `json:"has_more"`
+	QuotaMax       int  `json:"quota_max"`
+	QuotaRemaining int  `json:"quota_remaining"`
+}
+
 type GitHubUpdatePut struct {
 	Message   string `json:"message"`
 	Committer struct {

@@ -36,8 +36,8 @@ func DumpMarkdown(path *string, ranks Ranks, location *string) {
 ### Area%s
 
 
-Rank|Name|Rep|Location|Web|Avatar
-----|----|---|--------|---|------
+Rank|Name|Rep|Location|Web
+----|----|---|--------|---
 `
 	var fmtLocation string
 
@@ -47,7 +47,7 @@ Rank|Name|Rep|Location|Web|Avatar
 		fmtLocation = fmt.Sprintf(" *pattern*: %s", *location)
 	}
 
-	userfmt := "{{.Rank}}|[{{.DisplayName}}]({{.Link}})|{{.Reputation}}|{{.Location}}|{{.WebsiteURL}}|![Avatar]({{.ProfileImage}})\n"
+	userfmt := "{{.Rank}}|[{{.DisplayName}}]({{.Link}})|{{.Reputation}}|{{.Location}}|[![Web]({{.ProfileImage}})]({{.WebsiteURL}})\n"
 
 	f, err := os.Create(*path)
 	if err != nil {
