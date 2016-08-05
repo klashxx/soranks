@@ -4,16 +4,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"time"
 )
 
-func GitHubConnector(md string, mdfmt string, branch string, author Committer) (err error) {
+func GitHubConnector(md string, mdfmt string, branch string, author Committer) error {
 
 	encoded, err := Markdown2Base64(mdfmt)
 	if err != nil {
-		Error.Println(err)
-		os.Exit(5)
+		return err
 	}
 
 	url := fmt.Sprintf("%s%s", GHApiURL, "/git/trees/dev")
@@ -21,7 +19,12 @@ func GitHubConnector(md string, mdfmt string, branch string, author Committer) (
 
 	folder := false
 	repo := new(Repo)
-	_ = StreamHTTP(url, repo, false)
+
+	err = StreamHTTP(url, repo, false)
+	if err != nil {
+		return err
+	}
+
 	for _, file := range repo.Tree {
 		if file.Path == "data" {
 			url = file.URL
@@ -29,14 +32,19 @@ func GitHubConnector(md string, mdfmt string, branch string, author Committer) (
 			break
 		}
 	}
+
 	if !folder {
 		return fmt.Errorf("Cant't get data folder url")
 	}
 
 	Trace.Printf("md: %s\n", md)
 
+	err = StreamHTTP(url, repo, false)
+	if err != nil {
+		return err
+	}
+
 	sha := ""
-	_ = StreamHTTP(url, repo, false)
 	for _, file := range repo.Tree {
 		if file.Path == md {
 			sha = file.Sha
@@ -49,13 +57,13 @@ func GitHubConnector(md string, mdfmt string, branch string, author Committer) (
 
 	token := GetKey(GitHubToken)
 	if token == "" {
-		Error.Println("Can't get github  token!")
-		os.Exit(5)
+		return fmt.Errorf("Can't get github  token!")
 	}
 	Info.Printf("token: %s\n", token)
 
-	var buf io.ReadWriter
 	c := fmt.Sprintf("%s [%s]", md, time.Now().Format(time.RFC3339))
+
+	var buf io.ReadWriter
 
 	if sha == "" {
 		Info.Println("Update not detected.")
@@ -65,7 +73,7 @@ func GitHubConnector(md string, mdfmt string, branch string, author Committer) (
 			Content:   encoded,
 			Branch:    branch,
 			Committer: author}
-		buf, _ = Encoder(data)
+		buf, err = Encoder(data)
 	} else {
 		Info.Printf("Update SHA: %s", sha)
 		data := Update{
@@ -75,25 +83,32 @@ func GitHubConnector(md string, mdfmt string, branch string, author Committer) (
 			Sha:       sha,
 			Branch:    branch,
 			Committer: author}
-		buf, _ = Encoder(data)
+		buf, err = Encoder(data)
+	}
+
+	if err != nil {
+		return err
 	}
 
 	req, err := http.NewRequest("PUT", url, buf)
 	if err != nil {
-		Trace.Println(err)
+		return err
 	}
 	Trace.Println("Sending header.")
 	req.Header.Set("Authorization", fmt.Sprintf("token %s", token))
 
 	response, err := http.DefaultClient.Do(req)
 	if err != nil {
-		Trace.Println(err)
+		return err
 	}
 	Trace.Println("Response.")
 	defer response.Body.Close()
 
 	up := new(GHReqError)
-	_ = Decoder(response.Body, up)
+	err = Decoder(response.Body, up)
+	if err != nil {
+		return err
+	}
 
 	Trace.Println(up)
 

@@ -99,7 +99,6 @@ func main() {
 		if !repLimit {
 			break
 		}
-		lib.Trace.Println("User info extraction done.")
 
 		lastPage = currentPage
 		currentPage += 1
@@ -114,13 +113,23 @@ func main() {
 	}
 
 	if *jsonrsp != "" {
-		lib.DumpJson(jsonrsp, &ranks)
+		if err = lib.DumpJson(jsonrsp, &ranks); err != nil {
+			lib.Error.Println("JSON Dump failed:", err)
+			os.Exit(5)
+		}
 	}
 
 	if *mdrsp != "" {
-		lib.DumpMarkdown(mdrsp, ranks, location)
+		if err = lib.DumpMarkdown(mdrsp, ranks, location); err != nil {
+			lib.Error.Println("MD Dump failed:", err)
+			os.Exit(5)
+		}
+
 		if *publish != "" {
-			_ = lib.GitHubConnector(*publish, *mdrsp, branch, author)
+			if err = lib.GitHubConnector(*publish, *mdrsp, branch, author); err != nil {
+				lib.Error.Println("GitHub connection error:", err)
+				os.Exit(5)
+			}
 		}
 	}
 
