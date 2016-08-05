@@ -1,9 +1,7 @@
 package lib
 
 import (
-	"bytes"
 	"compress/gzip"
-	"encoding/json"
 	"io"
 	"net/http"
 	"os"
@@ -50,21 +48,9 @@ func StreamHTTP(url string, data interface{}, gzipped bool) error {
 	return Decoder(reader, data)
 }
 
-func DataToGihub(data interface{}) (buf io.ReadWriter, err error) {
-
-	buf = new(bytes.Buffer)
-	err = json.NewEncoder(buf).Encode(data)
-	if err != nil {
-		return nil, err
-	}
-	return buf, nil
-
-}
-
-func StreamFile(jsonfile string) (users *SOUsers, err error) {
+func StreamFile(jsonfile string, data interface{}) error {
 	reader, _ := os.Open(jsonfile)
 	defer reader.Close()
 
-	users = new(SOUsers)
-	return users, Decoder(reader, users)
+	return Decoder(reader, data)
 }

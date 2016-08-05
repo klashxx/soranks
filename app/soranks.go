@@ -54,10 +54,11 @@ func main() {
 	lastPage := currentPage
 	counter := 0
 
-	var users *lib.SOUsers
 	var ranks lib.Ranks
 	var key string
 	var err error
+
+	users := new(lib.SOUsers)
 
 	for {
 		if *jsonfile == "" {
@@ -69,9 +70,6 @@ func main() {
 			lib.Trace.Printf("Requesting page: %d\n", currentPage)
 
 			url := fmt.Sprintf("%s/%s%s", lib.SOApiURL, fmt.Sprintf(lib.SOUsersQuery, currentPage), key)
-
-			users = new(lib.SOUsers)
-
 			err = lib.StreamHTTP(url, users, true)
 
 			lib.Trace.Printf("Page users: %d\n", len(users.Items))
@@ -87,8 +85,7 @@ func main() {
 			}
 		} else {
 			lib.Info.Println("Extracting from source JSON file.")
-			var err error
-			users, err = lib.StreamFile(*jsonfile)
+			err = lib.StreamFile(*jsonfile, users)
 			if err != nil {
 				lib.Error.Println("Can't decode json file.")
 				os.Exit(5)
