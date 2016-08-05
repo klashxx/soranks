@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func GetKey(path string) (key string) {
+func GetKey(path string) string {
 
 	_, err := os.Stat(path)
 	if err != nil {
@@ -25,7 +25,7 @@ func GetKey(path string) (key string) {
 	return strings.TrimRight(string(strkey)[:], "\n")
 }
 
-func Markdown2Base64(path string) (b64 string, err error) {
+func Markdown2Base64(path string) (string, error) {
 
 	mdraw, err := ioutil.ReadFile(path)
 	if err != nil {

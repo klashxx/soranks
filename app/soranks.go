@@ -93,6 +93,11 @@ func main() {
 			stop = true
 		}
 
+		if len(users.Items) == 0 {
+			lib.Error.Println("Can't get user info.")
+			os.Exit(5)
+		}
+
 		lib.Trace.Println("User info extraction.")
 
 		repLimit := lib.GetUserInfo(users, MinReputation, re, &counter, *limit, &ranks, *term)
