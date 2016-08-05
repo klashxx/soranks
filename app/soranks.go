@@ -3,12 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"regexp"
-	"time"
 
 	"github.com/klashxx/soranks/lib"
 )
@@ -36,98 +33,6 @@ var (
 	term     = flag.Bool("term", false, "print output in terminal")
 	publish  = flag.String("publish", "", "publish ranks in Github")
 )
-
-func GitHubIntegration(md string) (err error) {
-
-	encoded, err := lib.Markdown2Base64(*mdrsp)
-	if err != nil {
-		lib.Error.Println(err)
-		os.Exit(5)
-	}
-
-	url := fmt.Sprintf("%s%s", GHApiURL, "/git/trees/dev")
-	lib.Trace.Printf("Tree url: %s\n", url)
-
-	folder := false
-	repo := new(lib.Repo)
-	_ = lib.StreamHTTP(url, repo, false)
-	for _, file := range repo.Tree {
-		if file.Path == "data" {
-			url = file.URL
-			folder = true
-			break
-		}
-	}
-	if !folder {
-		return fmt.Errorf("Cant't get data folder url")
-	}
-
-	lib.Trace.Printf("md: %s\n", md)
-
-	sha := ""
-	_ = lib.StreamHTTP(url, repo, false)
-	for _, file := range repo.Tree {
-		if file.Path == md {
-			sha = file.Sha
-			break
-		}
-	}
-
-	url = fmt.Sprintf("%s/contents/data/%s", GHApiURL, md)
-	lib.Trace.Println(url)
-
-	token := lib.GetKey(GitHubToken)
-	if token == "" {
-		lib.Error.Println("Can't get github  token!")
-		os.Exit(5)
-	}
-	lib.Info.Printf("token: %s\n", token)
-
-	var buf io.ReadWriter
-	c := fmt.Sprintf("%s [%s]", md, time.Now().Format(time.RFC3339))
-
-	if sha == "" {
-		lib.Info.Println("Update not detected.")
-		data := lib.Create{
-			Path:      *mdrsp,
-			Message:   fmt.Sprintf("Create: %s", c),
-			Content:   encoded,
-			Branch:    branch,
-			Committer: author}
-		buf, _ = lib.DataToGihub(data)
-	} else {
-		lib.Info.Printf("Update SHA: %s", sha)
-		data := lib.Update{
-			Path:      *mdrsp,
-			Message:   fmt.Sprintf("Update: %s", c),
-			Content:   encoded,
-			Sha:       sha,
-			Branch:    branch,
-			Committer: author}
-		buf, _ = lib.DataToGihub(data)
-	}
-
-	req, err := http.NewRequest("PUT", url, buf)
-	if err != nil {
-		lib.Trace.Println(err)
-	}
-	lib.Trace.Println("Sending header.")
-	req.Header.Set("Authorization", fmt.Sprintf("token %s", token))
-
-	response, err := http.DefaultClient.Do(req)
-	if err != nil {
-		lib.Trace.Println(err)
-	}
-	lib.Trace.Println("Response.")
-	defer response.Body.Close()
-
-	up := new(lib.GHReqError)
-	_ = lib.Decoder(response.Body, up)
-
-	lib.Trace.Println(up)
-
-	return nil
-}
 
 func main() {
 	flag.Parse()
@@ -224,7 +129,7 @@ func main() {
 	if *mdrsp != "" {
 		lib.DumpMarkdown(mdrsp, ranks, location)
 		if *publish != "" {
-			_ = GitHubIntegration(*publish)
+			_ = lib.GitHubConnector(GHApiURL, *publish, *mdrsp, GitHubToken, branch, author)
 		}
 	}
 
