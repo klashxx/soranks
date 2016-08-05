@@ -18,8 +18,8 @@ const (
 	MinReputation = 500
 	APIKeyPath    = "../_secret/api.key"
 	GitHubToken   = "../_secret/token"
-	SOApiURL      = "https://api.stackexchange.com/2.2/users?page="
-	SOQuery       = "pagesize=100&order=desc&sort=reputation&site=stackoverflow"
+	SOApiURL      = "https://api.stackexchange.com/2.2"
+	SOUsersQuery  = `users?page=%d&pagesize=100&order=desc&sort=reputation&site=stackoverflow`
 	GHApiURL      = "https://api.github.com/repos/klashxx/soranks"
 )
 
@@ -165,7 +165,7 @@ func main() {
 
 			lib.Trace.Printf("Requesting page: %d\n", currentPage)
 
-			users, err = lib.StreamHTTP(currentPage, key, SOApiURL, SOQuery)
+			users, err = lib.StreamHTTP(currentPage, key, SOApiURL, SOUsersQuery)
 
 			lib.Trace.Printf("Page users: %d\n", len(users.Items))
 			if err != nil || len(users.Items) == 0 {
