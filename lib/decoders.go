@@ -3,22 +3,10 @@ package lib
 import (
 	"encoding/json"
 	"io"
+	"reflect"
 )
 
-func Decode(r io.Reader) (users *SOUsers, err error) {
-
-	users = new(SOUsers)
-	return users, json.NewDecoder(r).Decode(users)
-}
-
-func Decode2(r io.Reader) (repo *Repo, err error) {
-
-	repo = new(Repo)
-	return repo, json.NewDecoder(r).Decode(repo)
-}
-
-func Decode3(r io.Reader) (up *GHReqError, err error) {
-
-	up = new(GHReqError)
-	return up, json.NewDecoder(r).Decode(up)
+func Decoder(r io.Reader, data interface{}) error {
+	Trace.Println(reflect.TypeOf(data))
+	return json.NewDecoder(r).Decode(data)
 }

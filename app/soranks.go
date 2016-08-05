@@ -116,12 +116,12 @@ func GitHubIntegration(md string) (err error) {
 		lib.Trace.Println(err)
 	}
 	lib.Trace.Println("Response.")
-
 	defer response.Body.Close()
 
-	respstring, _ := lib.Decode3(response.Body)
+	up := new(lib.GHReqError)
+	_ = lib.Decoder(response.Body, up)
 
-	lib.Trace.Println(respstring)
+	lib.Trace.Println(up)
 
 	return nil
 }

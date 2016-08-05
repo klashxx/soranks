@@ -46,7 +46,8 @@ func StreamHTTP(page int, key string, apiurl string, query string) (users *SOUse
 	default:
 		reader = response.Body
 	}
-	return Decode(reader)
+	users = new(SOUsers)
+	return users, Decoder(reader, users)
 }
 
 func StreamHTTP2(url string) (repo *Repo, err error) {
@@ -79,7 +80,8 @@ func StreamHTTP2(url string) (repo *Repo, err error) {
 		reader = response.Body
 	}
 
-	return Decode2(reader)
+	repo = new(Repo)
+	return repo, Decoder(reader, repo)
 }
 
 func DataToGihub(data interface{}) (buf io.ReadWriter, err error) {
@@ -94,7 +96,9 @@ func DataToGihub(data interface{}) (buf io.ReadWriter, err error) {
 }
 
 func StreamFile(jsonfile string) (users *SOUsers, err error) {
-	reader, err := os.Open(jsonfile)
+	reader, _ := os.Open(jsonfile)
 	defer reader.Close()
-	return Decode(reader)
+
+	users = new(SOUsers)
+	return users, Decoder(reader, users)
 }
