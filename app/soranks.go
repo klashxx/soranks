@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"time"
 
 	"github.com/klashxx/soranks/lib"
 )
@@ -82,12 +83,13 @@ func GitHubIntegration(md string) (err error) {
 	lib.Info.Printf("token: %s\n", token)
 
 	var buf io.ReadWriter
+	c := fmt.Sprintf("%s [%s]", md, time.Now().Format(time.RFC3339))
 
 	if sha == "" {
 		lib.Info.Println("Update not detected.")
 		data := lib.Create{
 			Path:      *mdrsp,
-			Message:   "test",
+			Message:   fmt.Sprintf("Create: %s", c),
 			Content:   encoded,
 			Branch:    branch,
 			Committer: author}
@@ -96,7 +98,7 @@ func GitHubIntegration(md string) (err error) {
 		lib.Info.Printf("Update SHA: %s", sha)
 		data := lib.Update{
 			Path:      *mdrsp,
-			Message:   "test",
+			Message:   fmt.Sprintf("Update: %s", c),
 			Content:   encoded,
 			Sha:       sha,
 			Branch:    branch,
