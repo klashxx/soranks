@@ -11,6 +11,7 @@ resp.md
 # Folders
 _obj
 _test
+_temp
 _secret
 
 # Architecture specific extensions/prefixes
