@@ -14,43 +14,28 @@ const (
 	MaxErrors     = 3
 	MaxPages      = 1100
 	MinReputation = 500
-	APIKeyPath    = "../_secret/api.key"
-	GitHubToken   = "../_secret/token"
-	SOApiURL      = "https://api.stackexchange.com/2.2"
-	SOUsersQuery  = `users?page=%d&pagesize=100&order=desc&sort=reputation&site=stackoverflow`
-	SOUserTags    = `users/%d/top-answer-tags?page=1&pagesize=3&site=stackoverflow`
-	GHApiURL      = "https://api.github.com/repos/klashxx/soranks"
 )
 
 var (
 	author   = lib.Committer{Name: "klasxx", Email: "klashxx@gmail.com"}
 	branch   = "dev"
-	location = flag.String("location", ".", "location")
-	jsonfile = flag.String("json", "", "json sample file")
-	jsonrsp  = flag.String("jsonrsp", "", "json response file")
-	mdrsp    = flag.String("mdrsp", "", "markdown response file")
+	location = flag.String("location", ".", "finder regex")
+	jsonfile = flag.String("json", "", "json sample file (offline)")
 	limit    = flag.Int("limit", 20, "max number of records")
-	term     = flag.Bool("term", false, "print output in terminal")
-	publish  = flag.String("publish", "", "publish ranks in Github")
+	term     = flag.Bool("term", false, "print output to terminal")
+	publish  = flag.String("publish", "", "values: 'local' or remote filename (NO ext)")
 )
 
 func main() {
 	flag.Parse()
-	lib.Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 
+	lib.Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 	lib.Trace.Println("location: ", *location)
 	lib.Trace.Println("json: ", *jsonfile)
 	lib.Trace.Println("jsontest: ", *jsonfile)
-	lib.Trace.Println("jsonrsp: ", *jsonrsp)
-	lib.Trace.Println("mdrsp: ", *mdrsp)
 	lib.Trace.Println("limit: ", *limit)
 	lib.Trace.Println("term: ", *term)
 	lib.Trace.Println("publish: ", *publish)
-
-	if *publish != "" && *mdrsp == "" {
-		lib.Error.Println("Publish requires mdrsp!!")
-		os.Exit(5)
-	}
 
 	re := regexp.MustCompile(fmt.Sprintf("(?i)%s", *location))
 
@@ -60,24 +45,22 @@ func main() {
 	lastPage := currentPage
 	counter := 0
 
-	var users *lib.SOUsers
 	var ranks lib.Ranks
 	var key string
 	var err error
+
+	users := new(lib.SOUsers)
 
 	for {
 		if *jsonfile == "" {
 			if lastPage == currentPage {
 				lib.Info.Println("Trying to extract API key.")
-				key = fmt.Sprintf("&key=%s", lib.GetKey(APIKeyPath))
+				key = fmt.Sprintf("&key=%s", lib.GetKey(lib.APIKeyPath))
 			}
 
 			lib.Trace.Printf("Requesting page: %d\n", currentPage)
 
-			url := fmt.Sprintf("%s/%s%s", SOApiURL, fmt.Sprintf(SOUsersQuery, currentPage), key)
-
-			users = new(lib.SOUsers)
-
+			url := fmt.Sprintf("%s/%s%s", lib.SOApiURL, fmt.Sprintf(lib.SOUsersQuery, currentPage), key)
 			err = lib.StreamHTTP(url, users, true)
 
 			lib.Trace.Printf("Page users: %d\n", len(users.Items))
@@ -93,13 +76,17 @@ func main() {
 			}
 		} else {
 			lib.Info.Println("Extracting from source JSON file.")
-			var err error
-			users, err = lib.StreamFile(*jsonfile)
+			err = lib.StreamFile(*jsonfile, users)
 			if err != nil {
 				lib.Error.Println("Can't decode json file.")
 				os.Exit(5)
 			}
 			stop = true
+		}
+
+		if len(users.Items) == 0 {
+			lib.Error.Println("Can't get user info.")
+			os.Exit(5)
 		}
 
 		lib.Trace.Println("User info extraction.")
@@ -108,7 +95,6 @@ func main() {
 		if !repLimit {
 			break
 		}
-		lib.Trace.Println("User info extraction done.")
 
 		lastPage = currentPage
 		currentPage += 1
@@ -122,14 +108,37 @@ func main() {
 		os.Exit(0)
 	}
 
-	if *jsonrsp != "" {
-		lib.DumpJson(jsonrsp, &ranks)
-	}
+	if *publish != "" {
 
-	if *mdrsp != "" {
-		lib.DumpMarkdown(mdrsp, ranks, location)
-		if *publish != "" {
-			_ = lib.GitHubConnector(GHApiURL, *publish, *mdrsp, GitHubToken, branch, author)
+		if err = lib.DumpJson(&ranks); err != nil {
+			lib.Error.Println("JSON Dump failed:", err)
+			os.Exit(5)
+		}
+		if err = lib.DumpMarkdown(ranks, location); err != nil {
+			lib.Error.Println("MD Dump failed:", err)
+			os.Exit(5)
+		}
+
+		if *publish != "local" {
+
+			token := lib.GetKey(lib.GitHubToken)
+			if token == "" {
+				lib.Error.Println("Can't get github token!")
+				os.Exit(5)
+			}
+
+			fname := fmt.Sprintf("%s.md", *publish)
+			if err = lib.GitHubConnector(lib.RspMDPath, fname, token, branch, author); err != nil {
+				lib.Error.Printf("GitHub connection Markdown (%s) error: %s\n", fname, err)
+				os.Exit(5)
+			}
+
+			fname = fmt.Sprintf("%s.json", *publish)
+			if err = lib.GitHubConnector(lib.RspJSONPath, fname, token, branch, author); err != nil {
+				lib.Error.Printf("GitHub connection JSON (%s) error: %s\n", fname, err)
+				os.Exit(5)
+			}
+
 		}
 	}
 

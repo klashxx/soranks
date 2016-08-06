@@ -8,26 +8,34 @@ import (
 	"text/template"
 )
 
-func DumpJson(path *string, ranks *Ranks) {
-	Trace.Printf("Writing JSON to: %s\n", *path)
-	jsonenc, _ := json.MarshalIndent(*ranks, "", " ")
-	f, err := os.Create(*path)
+func DumpJson(ranks *Ranks) error {
+	Trace.Printf("Writing JSON to: %s\n", RspJSONPath)
+
+	jsonenc, err := json.MarshalIndent(*ranks, "", " ")
 	if err != nil {
-		panic(err)
+		return err
+	}
+
+	f, err := os.Create(RspJSONPath)
+	if err != nil {
+		return err
 	}
 	defer f.Close()
+
 	w := bufio.NewWriter(f)
 	n4, err := w.WriteString(string(jsonenc))
 	if err != nil {
-		panic(err)
+		return err
 	}
-	Trace.Printf("Wrote %d bytes to %s\n", n4, *path)
+	Trace.Printf("Wrote %d bytes to %s\n", n4, RspJSONPath)
 
 	w.Flush()
+
+	return nil
 }
 
-func DumpMarkdown(path *string, ranks Ranks, location *string) {
-	Trace.Printf("Writing MD to: %s\n", *path)
+func DumpMarkdown(ranks Ranks, location *string) error {
+	Trace.Printf("Writing MD to: %s\n", RspMDPath)
 
 	head := `# soranks
 
@@ -49,23 +57,29 @@ Rank|Name|Rep|Location|Web
 
 	userfmt := "{{.Rank}}|[{{.DisplayName}}]({{.Link}})|{{.Reputation}}|{{.Location}}|[![Web]({{.ProfileImage}})]({{.WebsiteURL}})\n"
 
-	f, err := os.Create(*path)
+	f, err := os.Create(RspMDPath)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	defer f.Close()
 	w := bufio.NewWriter(f)
 	n4, err := w.WriteString(fmt.Sprintf(head, fmtLocation))
 	if err != nil {
-		panic(err)
+		return err
 	}
 	w.Flush()
 
-	tmpl, _ := template.New("Ranking").Parse(userfmt)
+	tmpl, err := template.New("Ranking").Parse(userfmt)
+	if err != nil {
+		return err
+	}
+
 	for _, userRank := range ranks {
 		_ = tmpl.Execute(f, userRank)
 	}
-	Trace.Printf("Wrote %d bytes to %s\n", n4, *path)
+	Trace.Printf("Wrote %d bytes to %s\n", n4, RspMDPath)
 	w.Flush()
+
+	return nil
 }

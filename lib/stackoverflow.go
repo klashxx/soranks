@@ -5,7 +5,7 @@ import (
 	"regexp"
 )
 
-func GetUserInfo(users *SOUsers, min int, location *regexp.Regexp, counter *int, limit int, ranks *Ranks, term bool) (rep bool) {
+func GetUserInfo(users *SOUsers, min int, location *regexp.Regexp, counter *int, limit int, ranks *Ranks, term bool) bool {
 
 	for _, user := range users.Items {
 		Trace.Printf("Procesing user: %d\n", user.AccountID)

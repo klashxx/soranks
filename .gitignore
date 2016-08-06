@@ -5,11 +5,13 @@
 soranks
 resp.json
 resp.md
+*sublime*
 
 
 # Folders
 _obj
 _test
+_temp
 _secret
 
 # Architecture specific extensions/prefixes
