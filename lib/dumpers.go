@@ -8,15 +8,15 @@ import (
 	"text/template"
 )
 
-func DumpJson(path *string, ranks *Ranks) error {
-	Trace.Printf("Writing JSON to: %s\n", *path)
+func DumpJson(ranks *Ranks) error {
+	Trace.Printf("Writing JSON to: %s\n", RspJSONPath)
 
 	jsonenc, err := json.MarshalIndent(*ranks, "", " ")
 	if err != nil {
 		return err
 	}
 
-	f, err := os.Create(*path)
+	f, err := os.Create(RspJSONPath)
 	if err != nil {
 		return err
 	}
@@ -27,15 +27,15 @@ func DumpJson(path *string, ranks *Ranks) error {
 	if err != nil {
 		return err
 	}
-	Trace.Printf("Wrote %d bytes to %s\n", n4, *path)
+	Trace.Printf("Wrote %d bytes to %s\n", n4, RspJSONPath)
 
 	w.Flush()
 
 	return nil
 }
 
-func DumpMarkdown(path *string, ranks Ranks, location *string) error {
-	Trace.Printf("Writing MD to: %s\n", *path)
+func DumpMarkdown(ranks Ranks, location *string) error {
+	Trace.Printf("Writing MD to: %s\n", RspMDPath)
 
 	head := `# soranks
 
@@ -57,7 +57,7 @@ Rank|Name|Rep|Location|Web
 
 	userfmt := "{{.Rank}}|[{{.DisplayName}}]({{.Link}})|{{.Reputation}}|{{.Location}}|[![Web]({{.ProfileImage}})]({{.WebsiteURL}})\n"
 
-	f, err := os.Create(*path)
+	f, err := os.Create(RspMDPath)
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ Rank|Name|Rep|Location|Web
 	for _, userRank := range ranks {
 		_ = tmpl.Execute(f, userRank)
 	}
-	Trace.Printf("Wrote %d bytes to %s\n", n4, *path)
+	Trace.Printf("Wrote %d bytes to %s\n", n4, RspMDPath)
 	w.Flush()
 
 	return nil

@@ -3,6 +3,8 @@ package lib
 import "time"
 
 const (
+	RspMDPath    = "../_temp/ranks.md"
+	RspJSONPath  = "../_temp/ranks.json"
 	APIKeyPath   = "../_secret/api.key"
 	GitHubToken  = "../_secret/token"
 	SOApiURL     = "https://api.stackexchange.com/2.2"

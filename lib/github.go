@@ -7,9 +7,9 @@ import (
 	"time"
 )
 
-func GitHubConnector(md string, mdfmt string, branch string, author Committer) error {
+func GitHubConnector(md string, branch string, author Committer) error {
 
-	encoded, err := Markdown2Base64(mdfmt)
+	encoded, err := Markdown2Base64(RspMDPath)
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func GitHubConnector(md string, mdfmt string, branch string, author Committer) e
 	if sha == "" {
 		Info.Println("Update not detected.")
 		data := Create{
-			Path:      mdfmt,
+			Path:      RspMDPath,
 			Message:   fmt.Sprintf("Create: %s", c),
 			Content:   encoded,
 			Branch:    branch,
@@ -77,7 +77,7 @@ func GitHubConnector(md string, mdfmt string, branch string, author Committer) e
 	} else {
 		Info.Printf("Update SHA: %s", sha)
 		data := Update{
-			Path:      mdfmt,
+			Path:      RspMDPath,
 			Message:   fmt.Sprintf("Update: %s", c),
 			Content:   encoded,
 			Sha:       sha,

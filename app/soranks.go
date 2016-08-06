@@ -19,32 +19,23 @@ const (
 var (
 	author   = lib.Committer{Name: "klasxx", Email: "klashxx@gmail.com"}
 	branch   = "dev"
-	location = flag.String("location", ".", "location")
-	jsonfile = flag.String("json", "", "json sample file")
-	jsonrsp  = flag.String("jsonrsp", "", "json response file")
-	mdrsp    = flag.String("mdrsp", "", "markdown response file")
+	location = flag.String("location", ".", "finder regex")
+	jsonfile = flag.String("json", "", "json sample file (offline)")
 	limit    = flag.Int("limit", 20, "max number of records")
-	term     = flag.Bool("term", false, "print output in terminal")
-	publish  = flag.String("publish", "", "publish ranks in Github")
+	term     = flag.Bool("term", false, "print output to terminal")
+	publish  = flag.String("publish", "", "values: 'local' or remote md filename.")
 )
 
 func main() {
 	flag.Parse()
-	lib.Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 
+	lib.Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 	lib.Trace.Println("location: ", *location)
 	lib.Trace.Println("json: ", *jsonfile)
 	lib.Trace.Println("jsontest: ", *jsonfile)
-	lib.Trace.Println("jsonrsp: ", *jsonrsp)
-	lib.Trace.Println("mdrsp: ", *mdrsp)
 	lib.Trace.Println("limit: ", *limit)
 	lib.Trace.Println("term: ", *term)
 	lib.Trace.Println("publish: ", *publish)
-
-	if *publish != "" && *mdrsp == "" {
-		lib.Error.Println("Publish requires mdrsp!!")
-		os.Exit(5)
-	}
 
 	re := regexp.MustCompile(fmt.Sprintf("(?i)%s", *location))
 
@@ -117,21 +108,19 @@ func main() {
 		os.Exit(0)
 	}
 
-	if *jsonrsp != "" {
-		if err = lib.DumpJson(jsonrsp, &ranks); err != nil {
+	if *publish != "" {
+
+		if err = lib.DumpJson(&ranks); err != nil {
 			lib.Error.Println("JSON Dump failed:", err)
 			os.Exit(5)
 		}
-	}
-
-	if *mdrsp != "" {
-		if err = lib.DumpMarkdown(mdrsp, ranks, location); err != nil {
+		if err = lib.DumpMarkdown(ranks, location); err != nil {
 			lib.Error.Println("MD Dump failed:", err)
 			os.Exit(5)
 		}
 
-		if *publish != "" {
-			if err = lib.GitHubConnector(*publish, *mdrsp, branch, author); err != nil {
+		if *publish != "local" {
+			if err = lib.GitHubConnector(*publish, branch, author); err != nil {
 				lib.Error.Println("GitHub connection error:", err)
 				os.Exit(5)
 			}
