@@ -7,6 +7,24 @@ import (
 	"time"
 )
 
+func GHPublisher(publish *string, branch string, author Committer) error {
+	token := GetKey(GitHubToken)
+	if token == "" {
+		return fmt.Errorf("Can't get github token!")
+	}
+
+	fname := fmt.Sprintf("%s.md", *publish)
+	if err := GitHubConnector(RspMDPath, fname, token, branch, author); err != nil {
+		return fmt.Errorf("GitHub connection Markdown (%s) error: %s\n", fname, err)
+	}
+
+	fname = fmt.Sprintf("%s.json", *publish)
+	if err := GitHubConnector(RspJSONPath, fname, token, branch, author); err != nil {
+		return fmt.Errorf("GitHub connection JSON (%s) error: %s\n", fname, err)
+	}
+	return nil
+}
+
 func GitHubConnector(fmtpath string, target string, token string, branch string, author Committer) error {
 
 	encoded, err := F2Base64(fmtpath)

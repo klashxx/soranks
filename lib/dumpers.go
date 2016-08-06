@@ -8,10 +8,20 @@ import (
 	"text/template"
 )
 
-func DumpJson(ranks *Ranks) error {
+func DumpLauncher(ranks Ranks, location *string) error {
+	if err := DumpJson(ranks); err != nil {
+		return fmt.Errorf("JSON Dump failed: %s", err)
+	}
+	if err := DumpMarkdown(ranks, location); err != nil {
+		return fmt.Errorf("MD Dump failed: %s", err)
+	}
+	return nil
+}
+
+func DumpJson(data interface{}) error {
 	Trace.Printf("Writing JSON to: %s\n", RspJSONPath)
 
-	jsonenc, err := json.MarshalIndent(*ranks, "", " ")
+	jsonenc, err := json.MarshalIndent(data, "", " ")
 	if err != nil {
 		return err
 	}
@@ -44,8 +54,8 @@ func DumpMarkdown(ranks Ranks, location *string) error {
 ### Area%s
 
 
-Rank|Name|Rep|Location|Web
-----|----|---|--------|---
+Rank|Name|Rep|Top Tags|Location|Web
+----|----|---|--------|--------|---
 `
 	var fmtLocation string
 
@@ -55,7 +65,7 @@ Rank|Name|Rep|Location|Web
 		fmtLocation = fmt.Sprintf(" *pattern*: %s", *location)
 	}
 
-	userfmt := "{{.Rank}}|[{{.DisplayName}}]({{.Link}})|{{.Reputation}}|{{.Location}}|[![Web]({{.ProfileImage}})]({{.WebsiteURL}})\n"
+	userfmt := "{{.Rank}}|[{{.DisplayName}}]({{.Link}})|{{.Reputation}}|<ul>{{.TopTags}}</ul>|{{.Location}}|[![Web]({{.ProfileImage}})]({{.WebsiteURL}})\n"
 
 	f, err := os.Create(RspMDPath)
 	if err != nil {

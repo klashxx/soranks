@@ -19,6 +19,7 @@ const (
 var (
 	author   = lib.Committer{Name: "klasxx", Email: "klashxx@gmail.com"}
 	branch   = "dev"
+	offline  = true
 	location = flag.String("location", ".", "finder regex")
 	jsonfile = flag.String("json", "", "json sample file (offline)")
 	limit    = flag.Int("limit", 20, "max number of records")
@@ -38,6 +39,10 @@ func main() {
 	lib.Trace.Println("publish: ", *publish)
 
 	re := regexp.MustCompile(fmt.Sprintf("(?i)%s", *location))
+
+	if *jsonfile == "" {
+		offline = false
+	}
 
 	stop := false
 	streamErrors := 0
@@ -91,7 +96,7 @@ func main() {
 
 		lib.Trace.Println("User info extraction.")
 
-		repLimit := lib.GetUserInfo(users, MinReputation, re, &counter, *limit, &ranks, *term)
+		repLimit := lib.GetUserInfo(users, MinReputation, re, &counter, *limit, &ranks, *term, offline, key)
 		if !repLimit {
 			break
 		}
@@ -109,36 +114,16 @@ func main() {
 	}
 
 	if *publish != "" {
-
-		if err = lib.DumpJson(&ranks); err != nil {
-			lib.Error.Println("JSON Dump failed:", err)
-			os.Exit(5)
-		}
-		if err = lib.DumpMarkdown(ranks, location); err != nil {
-			lib.Error.Println("MD Dump failed:", err)
+		if err := lib.DumpLauncher(ranks, location); err != nil {
+			fmt.Println(err)
 			os.Exit(5)
 		}
 
 		if *publish != "local" {
-
-			token := lib.GetKey(lib.GitHubToken)
-			if token == "" {
-				lib.Error.Println("Can't get github token!")
+			if err := lib.GHPublisher(publish, branch, author); err != nil {
+				fmt.Println(err)
 				os.Exit(5)
 			}
-
-			fname := fmt.Sprintf("%s.md", *publish)
-			if err = lib.GitHubConnector(lib.RspMDPath, fname, token, branch, author); err != nil {
-				lib.Error.Printf("GitHub connection Markdown (%s) error: %s\n", fname, err)
-				os.Exit(5)
-			}
-
-			fname = fmt.Sprintf("%s.json", *publish)
-			if err = lib.GitHubConnector(lib.RspJSONPath, fname, token, branch, author); err != nil {
-				lib.Error.Printf("GitHub connection JSON (%s) error: %s\n", fname, err)
-				os.Exit(5)
-			}
-
 		}
 	}
 
