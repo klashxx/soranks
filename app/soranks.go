@@ -125,25 +125,7 @@ func main() {
 		}
 
 		if *publish != "local" {
-
-			token := lib.GetKey(lib.GitHubToken)
-			if token == "" {
-				lib.Error.Println("Can't get github token!")
-				os.Exit(5)
-			}
-
-			fname := fmt.Sprintf("%s.md", *publish)
-			if err = lib.GitHubConnector(lib.RspMDPath, fname, token, branch, author); err != nil {
-				lib.Error.Printf("GitHub connection Markdown (%s) error: %s\n", fname, err)
-				os.Exit(5)
-			}
-
-			fname = fmt.Sprintf("%s.json", *publish)
-			if err = lib.GitHubConnector(lib.RspJSONPath, fname, token, branch, author); err != nil {
-				lib.Error.Printf("GitHub connection JSON (%s) error: %s\n", fname, err)
-				os.Exit(5)
-			}
-
+			lib.GHPublisher(publish, branch, author)
 		}
 	}
 

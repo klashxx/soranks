@@ -4,8 +4,29 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 )
+
+func GHPublisher(publish *string, branch string, author Committer) {
+	token := GetKey(GitHubToken)
+	if token == "" {
+		Error.Println("Can't get github token!")
+		os.Exit(5)
+	}
+
+	fname := fmt.Sprintf("%s.md", *publish)
+	if err := GitHubConnector(RspMDPath, fname, token, branch, author); err != nil {
+		Error.Printf("GitHub connection Markdown (%s) error: %s\n", fname, err)
+		os.Exit(5)
+	}
+
+	fname = fmt.Sprintf("%s.json", *publish)
+	if err := GitHubConnector(RspJSONPath, fname, token, branch, author); err != nil {
+		Error.Printf("GitHub connection JSON (%s) error: %s\n", fname, err)
+		os.Exit(5)
+	}
+}
 
 func GitHubConnector(fmtpath string, target string, token string, branch string, author Committer) error {
 
