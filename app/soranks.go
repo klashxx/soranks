@@ -23,7 +23,7 @@ var (
 	jsonfile = flag.String("json", "", "json sample file (offline)")
 	limit    = flag.Int("limit", 20, "max number of records")
 	term     = flag.Bool("term", false, "print output to terminal")
-	publish  = flag.String("publish", "", "values: 'local' or remote md filename.")
+	publish  = flag.String("publish", "", "values: 'local' or remote filename (NO ext)")
 )
 
 func main() {
@@ -120,10 +120,25 @@ func main() {
 		}
 
 		if *publish != "local" {
-			if err = lib.GitHubConnector(*publish, branch, author); err != nil {
-				lib.Error.Println("GitHub connection error:", err)
+
+			token := lib.GetKey(lib.GitHubToken)
+			if token == "" {
+				lib.Error.Println("Can't get github token!")
 				os.Exit(5)
 			}
+
+			fname := fmt.Sprintf("%s.md", *publish)
+			if err = lib.GitHubConnector(lib.RspMDPath, fname, token, branch, author); err != nil {
+				lib.Error.Printf("GitHub connection Markdown (%s) error: %s\n", fname, err)
+				os.Exit(5)
+			}
+
+			fname = fmt.Sprintf("%s.json", *publish)
+			if err = lib.GitHubConnector(lib.RspJSONPath, fname, token, branch, author); err != nil {
+				lib.Error.Printf("GitHub connection JSON (%s) error: %s\n", fname, err)
+				os.Exit(5)
+			}
+
 		}
 	}
 

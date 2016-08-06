@@ -25,11 +25,11 @@ func GetKey(path string) string {
 	return strings.TrimRight(string(strkey)[:], "\n")
 }
 
-func Markdown2Base64(path string) (string, error) {
+func F2Base64(path string) (string, error) {
 
-	mdraw, err := ioutil.ReadFile(path)
+	raw, err := ioutil.ReadFile(path)
 	if err != nil {
 		return "", fmt.Errorf("Can't load markdown: %s", err)
 	}
-	return base64.StdEncoding.EncodeToString(mdraw), nil
+	return base64.StdEncoding.EncodeToString(raw), nil
 }

@@ -7,9 +7,9 @@ import (
 	"time"
 )
 
-func GitHubConnector(md string, branch string, author Committer) error {
+func GitHubConnector(fmtpath string, target string, token string, branch string, author Committer) error {
 
-	encoded, err := Markdown2Base64(RspMDPath)
+	encoded, err := F2Base64(fmtpath)
 	if err != nil {
 		return err
 	}
@@ -37,7 +37,7 @@ func GitHubConnector(md string, branch string, author Committer) error {
 		return fmt.Errorf("Cant't get data folder url")
 	}
 
-	Trace.Printf("md: %s\n", md)
+	Trace.Printf("target: %s\n", target)
 
 	err = StreamHTTP(url, repo, false)
 	if err != nil {
@@ -46,29 +46,23 @@ func GitHubConnector(md string, branch string, author Committer) error {
 
 	sha := ""
 	for _, file := range repo.Tree {
-		if file.Path == md {
+		if file.Path == target {
 			sha = file.Sha
 			break
 		}
 	}
 
-	url = fmt.Sprintf("%s/contents/data/%s", GHApiURL, md)
+	url = fmt.Sprintf("%s/contents/data/%s", GHApiURL, target)
 	Trace.Println(url)
 
-	token := GetKey(GitHubToken)
-	if token == "" {
-		return fmt.Errorf("Can't get github  token!")
-	}
-	Info.Printf("token: %s\n", token)
-
-	c := fmt.Sprintf("%s [%s]", md, time.Now().Format(time.RFC3339))
+	c := fmt.Sprintf("%s [%s]", target, time.Now().Format(time.RFC3339))
 
 	var buf io.ReadWriter
 
 	if sha == "" {
 		Info.Println("Update not detected.")
 		data := Create{
-			Path:      RspMDPath,
+			Path:      fmtpath,
 			Message:   fmt.Sprintf("Create: %s", c),
 			Content:   encoded,
 			Branch:    branch,
@@ -77,7 +71,7 @@ func GitHubConnector(md string, branch string, author Committer) error {
 	} else {
 		Info.Printf("Update SHA: %s", sha)
 		data := Update{
-			Path:      RspMDPath,
+			Path:      fmtpath,
 			Message:   fmt.Sprintf("Update: %s", c),
 			Content:   encoded,
 			Sha:       sha,
