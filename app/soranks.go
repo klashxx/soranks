@@ -114,18 +114,16 @@ func main() {
 	}
 
 	if *publish != "" {
-
-		if err = lib.DumpJson(ranks); err != nil {
-			lib.Error.Println("JSON Dump failed:", err)
-			os.Exit(5)
-		}
-		if err = lib.DumpMarkdown(ranks, location); err != nil {
-			lib.Error.Println("MD Dump failed:", err)
+		if err := lib.DumpLauncher(ranks, location); err != nil {
+			fmt.Println(err)
 			os.Exit(5)
 		}
 
 		if *publish != "local" {
-			lib.GHPublisher(publish, branch, author)
+			if err := lib.GHPublisher(publish, branch, author); err != nil {
+				fmt.Println(err)
+				os.Exit(5)
+			}
 		}
 	}
 

@@ -8,6 +8,16 @@ import (
 	"text/template"
 )
 
+func DumpLauncher(ranks Ranks, location *string) error {
+	if err := DumpJson(ranks); err != nil {
+		return fmt.Errorf("JSON Dump failed: %s", err)
+	}
+	if err := DumpMarkdown(ranks, location); err != nil {
+		return fmt.Errorf("MD Dump failed: %s", err)
+	}
+	return nil
+}
+
 func DumpJson(data interface{}) error {
 	Trace.Printf("Writing JSON to: %s\n", RspJSONPath)
 
