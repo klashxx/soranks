@@ -55,6 +55,7 @@ type SOUserRank struct {
 	WebsiteURL   string `json:"website_url,omitempty"`
 	Link         string `json:"link"`
 	ProfileImage string `json:"profile_image"`
+	TopTags      string `json:"top_tags"`
 }
 
 type Ranks []SOUserRank

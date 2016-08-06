@@ -19,6 +19,7 @@ const (
 var (
 	author   = lib.Committer{Name: "klasxx", Email: "klashxx@gmail.com"}
 	branch   = "dev"
+	offline  = true
 	location = flag.String("location", ".", "finder regex")
 	jsonfile = flag.String("json", "", "json sample file (offline)")
 	limit    = flag.Int("limit", 20, "max number of records")
@@ -38,6 +39,10 @@ func main() {
 	lib.Trace.Println("publish: ", *publish)
 
 	re := regexp.MustCompile(fmt.Sprintf("(?i)%s", *location))
+
+	if *jsonfile == "" {
+		offline = false
+	}
 
 	stop := false
 	streamErrors := 0
@@ -91,7 +96,7 @@ func main() {
 
 		lib.Trace.Println("User info extraction.")
 
-		repLimit := lib.GetUserInfo(users, MinReputation, re, &counter, *limit, &ranks, *term)
+		repLimit := lib.GetUserInfo(users, MinReputation, re, &counter, *limit, &ranks, *term, offline, key)
 		if !repLimit {
 			break
 		}
