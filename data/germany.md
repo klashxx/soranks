@@ -9,7 +9,7 @@ Rank|Name|Rep|Location|Web
 ----|----|---|--------|---
 1|[Gumbo](http://stackoverflow.com/users/53114/gumbo)|384995|Ulm, Germany|[![Web](https://www.gravatar.com/avatar/cd501083459cbc21fccae78e2d03bee2?s=128&d=identicon&r=PG)](https://www.linkedin.com/in/markuswulftange)
 2|[Johannes Schaub - litb](http://stackoverflow.com/users/34509/johannes-schaub-litb)|334241|Frankfurt, Germany|[![Web](https://i.stack.imgur.com/7FnYg.jpg?s=128&g=1)](http://bloglitb.blogspot.com)
-3|[deceze](http://stackoverflow.com/users/476/deceze)|293050|Germany|[![Web](https://www.gravatar.com/avatar/a235706e3d81b614acaec3368edfea4b?s=128&d=identicon&r=PG)](http://kunststube.net)
+3|[deceze](http://stackoverflow.com/users/476/deceze)|293051|Germany|[![Web](https://www.gravatar.com/avatar/a235706e3d81b614acaec3368edfea4b?s=128&d=identicon&r=PG)](http://kunststube.net)
 4|[nickf](http://stackoverflow.com/users/9021/nickf)|277070|Berlin, Germany|[![Web](https://www.gravatar.com/avatar/0a6d284d4e2ce68e1c60871858da800b?s=128&d=identicon&r=PG)](http://spadgos.github.com)
 5|[Tim Schmelter](http://stackoverflow.com/users/284240/tim-schmelter)|267554|Aachen, Germany|[![Web](https://www.gravatar.com/avatar/01d6005ebf89c14de87a62add488aaad?s=128&d=identicon&r=PG)]()
 6|[alex](http://stackoverflow.com/users/31671/alex)|258896|Ulm, Germany|[![Web](https://i.stack.imgur.com/xEJu4.jpg?s=128&g=1)](http://alexanderdickson.com)
@@ -22,7 +22,7 @@ Rank|Name|Rep|Location|Web
 13|[Gordon](http://stackoverflow.com/users/208809/gordon)|209340|Essen, Germany|[![Web](https://www.gravatar.com/avatar/3eaa19bdd5f9f61fff5f7265734c6c09?s=128&d=identicon&r=PG)](http://about.me/gooh)
 14|[Tomalak](http://stackoverflow.com/users/18771/tomalak)|202490|Frankfurt, Germany|[![Web](https://www.gravatar.com/avatar/0ada184c98bf9073d15b2dc815be0170?s=128&d=identicon&r=PG)](http://xkcd.com/386/)
 15|[Joey](http://stackoverflow.com/users/73070/joey)|198902|T&#252;bingen, Germany|[![Web](https://www.gravatar.com/avatar/d54ed51c0f03cb461741c3ec77a837b2?s=128&d=identicon&r=PG)](http://hypftier.de)
-16|[Tim Pietzcker](http://stackoverflow.com/users/20670/tim-pietzcker)|192057|Ulm, Germany|[![Web](https://www.gravatar.com/avatar/251f2449ffba9fbcc3491db6564ff4a2?s=128&d=identicon&r=PG)](http://www.hs-ulm.de/ig)
+16|[Tim Pietzcker](http://stackoverflow.com/users/20670/tim-pietzcker)|192067|Ulm, Germany|[![Web](https://www.gravatar.com/avatar/251f2449ffba9fbcc3491db6564ff4a2?s=128&d=identicon&r=PG)](http://www.hs-ulm.de/ig)
 17|[akrun](http://stackoverflow.com/users/3732271/akrun)|189169|Frankfurt, Germany|[![Web](https://www.gravatar.com/avatar/ee6e12042dc31b1ef27471482f9ff91f?s=128&d=identicon&r=PG&f=1)]()
 18|[Oleg](http://stackoverflow.com/users/315935/oleg)|185094|Wachtberg, Germany|[![Web](https://www.gravatar.com/avatar/d2fe88fb2ca8a2047771bde11d39814c?s=128&d=identicon&r=PG)](http://www.ok-soft-gmbh.com)
 19|[ThiefMaster](http://stackoverflow.com/users/298479/thiefmaster)|183324|Germany|[![Web](https://www.gravatar.com/avatar/bc66db28aa7c3fa8e4ce4238b696dee9?s=128&d=identicon&r=PG)](http://www.metalspy.de)
