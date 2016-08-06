@@ -8,10 +8,10 @@ import (
 	"text/template"
 )
 
-func DumpJson(ranks *Ranks) error {
+func DumpJson(data interface{}) error {
 	Trace.Printf("Writing JSON to: %s\n", RspJSONPath)
 
-	jsonenc, err := json.MarshalIndent(*ranks, "", " ")
+	jsonenc, err := json.MarshalIndent(data, "", " ")
 	if err != nil {
 		return err
 	}

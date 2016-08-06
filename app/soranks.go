@@ -115,7 +115,7 @@ func main() {
 
 	if *publish != "" {
 
-		if err = lib.DumpJson(&ranks); err != nil {
+		if err = lib.DumpJson(ranks); err != nil {
 			lib.Error.Println("JSON Dump failed:", err)
 			os.Exit(5)
 		}
