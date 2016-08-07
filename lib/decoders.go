@@ -3,10 +3,8 @@ package lib
 import (
 	"encoding/json"
 	"io"
-	"reflect"
 )
 
-func Decoder(r io.Reader, data interface{}) error {
-	Trace.Println(reflect.TypeOf(data))
+func JSONDecoder(r io.Reader, data interface{}) error {
 	return json.NewDecoder(r).Decode(data)
 }

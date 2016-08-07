@@ -6,7 +6,7 @@ import (
 	"io"
 )
 
-func Encoder(data interface{}) (buf io.ReadWriter, err error) {
+func JSONEncoder(data interface{}) (buf io.ReadWriter, err error) {
 
 	buf = new(bytes.Buffer)
 	err = json.NewEncoder(buf).Encode(data)

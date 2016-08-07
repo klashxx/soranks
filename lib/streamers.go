@@ -45,12 +45,12 @@ func StreamHTTP(url string, data interface{}, gzipped bool) error {
 		reader = response.Body
 	}
 
-	return Decoder(reader, data)
+	return JSONDecoder(reader, data)
 }
 
 func StreamFile(jsonfile string, data interface{}) error {
 	reader, _ := os.Open(jsonfile)
 	defer reader.Close()
 
-	return Decoder(reader, data)
+	return JSONDecoder(reader, data)
 }

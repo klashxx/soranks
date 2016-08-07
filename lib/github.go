@@ -85,7 +85,7 @@ func GitHubConnector(fmtpath string, target string, token string, branch string,
 			Content:   encoded,
 			Branch:    branch,
 			Committer: author}
-		buf, err = Encoder(data)
+		buf, err = JSONEncoder(data)
 	} else {
 		Info.Printf("Update SHA: %s", sha)
 		data := Update{
@@ -95,7 +95,7 @@ func GitHubConnector(fmtpath string, target string, token string, branch string,
 			Sha:       sha,
 			Branch:    branch,
 			Committer: author}
-		buf, err = Encoder(data)
+		buf, err = JSONEncoder(data)
 	}
 
 	if err != nil {
@@ -117,7 +117,7 @@ func GitHubConnector(fmtpath string, target string, token string, branch string,
 	defer response.Body.Close()
 
 	up := new(GHReqError)
-	err = Decoder(response.Body, up)
+	err = JSONDecoder(response.Body, up)
 	if err != nil {
 		return err
 	}
