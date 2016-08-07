@@ -8,9 +8,9 @@ import (
 )
 
 func GHPublisher(publish *string, branch string, author Committer) error {
-	token := GetKey(GitHubToken)
-	if token == "" {
-		return fmt.Errorf("Can't get github token!")
+	token, err := GetKey(GitHubToken)
+	if err != nil {
+		return err
 	}
 
 	fname := fmt.Sprintf("%s.md", *publish)
