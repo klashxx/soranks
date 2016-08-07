@@ -29,7 +29,7 @@ func F2Base64(path string) (string, error) {
 
 	raw, err := ioutil.ReadFile(path)
 	if err != nil {
-		return "", fmt.Errorf("Can't load markdown: %s", err)
+		return "", fmt.Errorf("Can't load file to encode: %s", err)
 	}
 	return base64.StdEncoding.EncodeToString(raw), nil
 }
