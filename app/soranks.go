@@ -51,16 +51,21 @@ func main() {
 	counter := 0
 
 	var ranks lib.Ranks
-	var key string
 	var err error
 
 	users := new(lib.SOUsers)
+	key := ""
 
 	for {
 		if *jsonfile == "" {
 			if lastPage == currentPage {
 				lib.Info.Println("Trying to extract API key.")
-				key = fmt.Sprintf("&key=%s", lib.GetKey(lib.APIKeyPath))
+				key, err = lib.GetKey(lib.APIKeyPath)
+				if err != nil {
+					lib.Warning.Println(err)
+				} else {
+					key = fmt.Sprintf("&key=%s", key)
+				}
 			}
 
 			lib.Trace.Printf("Requesting page: %d\n", currentPage)
