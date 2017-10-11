@@ -3,10 +3,10 @@ package lib
 import "time"
 
 const (
-	RspMDPath    = "../_temp/ranks.md"
-	RspJSONPath  = "../_temp/ranks.json"
-	APIKeyPath   = "../_secret/api.key"
-	GitHubToken  = "../_secret/token"
+	RspMDPath    = "/tmp/_temp/ranks.md"
+	RspJSONPath  = "/tmp/_temp/ranks.json"
+	APIKeyPath   = "/tmp/_secret/api.key"
+	GitHubToken  = "/tmp/_secret/token"
 	SOApiURL     = "https://api.stackexchange.com/2.2"
 	SOUsersQuery = `users?page=%d&pagesize=100&order=desc&sort=reputation&site=stackoverflow`
 	SOUserTags   = `users/%d/top-answer-tags?page=1&pagesize=3&site=stackoverflow`
