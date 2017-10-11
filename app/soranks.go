@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	MaxErrors     = 3
-	MaxPages      = 1100
-	MinReputation = 500
+	maxErrors = 3
+	maxPages  = 1100
+	minRep    = 500
 )
 
 var (
@@ -89,7 +89,7 @@ func main() {
 
 				lib.Warning.Println("Can't stream data.")
 				streamErrors++
-				if streamErrors >= MaxErrors {
+				if streamErrors >= maxErrors {
 					lib.Error.Println("Max retry number reached")
 					os.Exit(5)
 				}
@@ -104,14 +104,14 @@ func main() {
 
 		lib.Trace.Println("User info extraction.")
 
-		repLimit := lib.GetUserInfo(users, MinReputation, re, &counter, *limit, &ranks, *term, offline, key)
+		repLimit := lib.GetUserInfo(users, minRep, re, &counter, *limit, &ranks, *term, offline, key)
 		if !repLimit {
 			break
 		}
 
 		lastPage = currentPage
 		currentPage++
-		if (currentPage >= MaxPages && MaxPages != 0) || !users.HasMore || stop {
+		if (currentPage >= maxPages && maxPages != 0) || !users.HasMore || stop {
 			break
 		}
 	}
