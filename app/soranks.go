@@ -20,7 +20,7 @@ var (
 	location     = flag.String("location", ".", "finder regex")
 	jsonfile     = flag.String("json", "", "json sample file (offline)")
 	limit        = flag.Int("limit", 20, "max number of records")
-	term         = flag.Bool("term", false, "print output to terminal")
+	term         = flag.Bool("term", true, "print output to terminal")
 	publish      = flag.String("publish", "", "values: 'local' or remote filename (NO ext)")
 	author       = lib.Committer{Name: "klasxx", Email: "klashxx@gmail.com"}
 	branch       = "dev"
