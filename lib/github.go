@@ -4,8 +4,24 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 )
+
+func GetToken() (token string, err error) {
+	Info.Println("Trying to load TOKEN.")
+	token = os.Getenv("GH_TOKEN")
+	if token != "" {
+		return token, nil
+	}
+
+	Info.Println("Trying to extract TOKEN.")
+	token, err = GetKey(GitHubToken)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
+}
 
 func GHPublisher(token string, publish *string, branch string, author Committer) error {
 	fname := fmt.Sprintf("%s.md", *publish)

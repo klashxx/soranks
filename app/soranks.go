@@ -62,7 +62,7 @@ func main() {
 	}
 
 	if *publish != "" && *publish != "local" {
-		token, err = lib.GetKey(lib.GitHubToken)
+		token, err = lib.GetToken()
 		if err != nil {
 			lib.Error.Println("Can't get GitHub token.")
 			os.Exit(5)
