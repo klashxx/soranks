@@ -16,7 +16,7 @@ func GetAPIKey() (key string, err error) {
 	Warning.Println("Can't load API_KEY env variable")
 
 	Info.Println("Trying to extract API key.")
-	key, err = GetKey(APIKeyPath)
+	key, err = GetKey(apiKeyPath)
 	if err != nil {
 		Warning.Println(err)
 		return "", err
@@ -34,7 +34,7 @@ func GetTags(userid int, key string, offline bool) string {
 	tags := new(SOTopTags)
 	tagstr := ""
 
-	url := fmt.Sprintf("%s/%s%s", SOApiURL, fmt.Sprintf(SOUserTags, userid), key)
+	url := fmt.Sprintf("%s/%s%s", SoAPIURL, fmt.Sprintf(soUserTags, userid), key)
 
 	if err := StreamHTTP(url, tags, true); err != nil {
 		Trace.Printf("No info for: %d\n", userid)

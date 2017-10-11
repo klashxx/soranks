@@ -17,7 +17,7 @@ func GetToken() (token string) {
 	Warning.Println("Can't load GH_TOKEN env variable")
 
 	Info.Println("Trying to extract TOKEN.")
-	token, err := GetKey(GitHubToken)
+	token, err := GetKey(gitHubToken)
 	if err != nil {
 		Error.Println(err)
 		os.Exit(5)
@@ -27,12 +27,12 @@ func GetToken() (token string) {
 
 func GHPublisher(token string, publish *string, branch string, author Committer) error {
 	fname := fmt.Sprintf("%s.md", *publish)
-	if err := GitHubConnector(RspMDPath, fname, token, branch, author); err != nil {
+	if err := GitHubConnector(rspMDpath, fname, token, branch, author); err != nil {
 		return fmt.Errorf("GitHub connection Markdown (%s) error: %s\n", fname, err)
 	}
 
 	fname = fmt.Sprintf("%s.json", *publish)
-	if err := GitHubConnector(RspJSONPath, fname, token, branch, author); err != nil {
+	if err := GitHubConnector(rspJSONpath, fname, token, branch, author); err != nil {
 		return fmt.Errorf("GitHub connection JSON (%s) error: %s\n", fname, err)
 	}
 	return nil
@@ -45,7 +45,7 @@ func GitHubConnector(fmtpath string, target string, token string, branch string,
 		return err
 	}
 
-	url := fmt.Sprintf("%s%s", GHApiURL, "/git/trees/dev")
+	url := fmt.Sprintf("%s%s", ghAPIURL, "/git/trees/dev")
 	Trace.Printf("Tree url: %s\n", url)
 
 	folder := false
@@ -83,7 +83,7 @@ func GitHubConnector(fmtpath string, target string, token string, branch string,
 		}
 	}
 
-	url = fmt.Sprintf("%s/contents/data/%s", GHApiURL, target)
+	url = fmt.Sprintf("%s/contents/data/%s", ghAPIURL, target)
 	Trace.Println(url)
 
 	c := fmt.Sprintf("%s [%s]", target, time.Now().Format(time.RFC3339))

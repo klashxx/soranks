@@ -9,16 +9,13 @@ import (
 )
 
 func GetKey(path string) (string, error) {
-
 	if _, err := os.Stat(path); err != nil {
 		return "", fmt.Errorf("Can't find key: %s\n", path)
 	}
-
 	strkey, err := ioutil.ReadFile(path)
 	if err != nil {
 		return "", fmt.Errorf("Can't load key: %s\n", err)
 	}
-
 	return strings.TrimRight(string(strkey)[:], "\n"), nil
 }
 

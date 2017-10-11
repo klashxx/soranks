@@ -3,14 +3,14 @@ package lib
 import "time"
 
 const (
-	RspMDPath    = "/tmp/_temp/ranks.md"
-	RspJSONPath  = "/tmp/_temp/ranks.json"
-	APIKeyPath   = "/tmp/_secret/api.key"
-	GitHubToken  = "/tmp/_secret/token"
-	SOApiURL     = "https://api.stackexchange.com/2.2"
-	SOUsersQuery = `users?page=%d&pagesize=100&order=desc&sort=reputation&site=stackoverflow`
-	SOUserTags   = `users/%d/top-answer-tags?page=1&pagesize=3&site=stackoverflow`
-	GHApiURL     = "https://api.github.com/repos/klashxx/soranks"
+	rspMDpath    = "/tmp/_temp/ranks.md"
+	rspJSONpath  = "/tmp/_temp/ranks.json"
+	apiKeyPath   = "/tmp/_secret/api.key"
+	gitHubToken  = "/tmp/_secret/token"
+	SoAPIURL     = "https://api.stackexchange.com/2.2"
+	SoUsersQuery = `users?page=%d&pagesize=100&order=desc&sort=reputation&site=stackoverflow`
+	soUserTags   = `users/%d/top-answer-tags?page=1&pagesize=3&site=stackoverflow`
+	ghAPIURL     = "https://api.github.com/repos/klashxx/soranks"
 )
 
 type SOUsers struct {

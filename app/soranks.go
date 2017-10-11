@@ -75,7 +75,7 @@ func main() {
 		} else {
 			lib.Trace.Printf("Requesting page: %d\n", currentPage)
 
-			url := fmt.Sprintf("%s/%s%s", lib.SOApiURL, fmt.Sprintf(lib.SOUsersQuery, currentPage), key)
+			url := fmt.Sprintf("%s/%s%s", lib.SoAPIURL, fmt.Sprintf(lib.SoUsersQuery, currentPage), key)
 			err = lib.StreamHTTP(url, users, true)
 
 			lib.Trace.Printf("Page users: %d\n", len(users.Items))
