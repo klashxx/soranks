@@ -8,19 +8,21 @@ import (
 	"time"
 )
 
-func GetToken() (token string, err error) {
+func GetToken() (token string) {
 	Info.Println("Trying to load TOKEN.")
 	token = os.Getenv("GH_TOKEN")
 	if token != "" {
-		return token, nil
+		return token
 	}
+	Warning.Println("Can't load GH_TOKEN env variable")
 
 	Info.Println("Trying to extract TOKEN.")
-	token, err = GetKey(GitHubToken)
+	token, err := GetKey(GitHubToken)
 	if err != nil {
-		return "", err
+		Error.Println(err)
+		os.Exit(5)
 	}
-	return token, nil
+	return token
 }
 
 func GHPublisher(token string, publish *string, branch string, author Committer) error {

@@ -54,19 +54,13 @@ func main() {
 	if *jsonfile == "" {
 		offline = false
 		key, err = lib.GetAPIKey()
-		if err != nil {
-			lib.Warning.Println(err)
-		} else {
+		if err == nil {
 			key = fmt.Sprintf("&key=%s", key)
 		}
 	}
 
 	if *publish != "" && *publish != "local" {
-		token, err = lib.GetToken()
-		if err != nil {
-			lib.Error.Println("Can't get GitHub token.")
-			os.Exit(5)
-		}
+		token = lib.GetToken()
 	}
 
 	for {

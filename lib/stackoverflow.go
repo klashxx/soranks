@@ -13,10 +13,12 @@ func GetAPIKey() (key string, err error) {
 	if key != "" {
 		return key, nil
 	}
+	Warning.Println("Can't load API_KEY env variable")
 
 	Info.Println("Trying to extract API key.")
 	key, err = GetKey(APIKeyPath)
 	if err != nil {
+		Warning.Println(err)
 		return "", err
 	}
 	return key, nil
