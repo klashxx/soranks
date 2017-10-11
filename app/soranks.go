@@ -53,8 +53,7 @@ func main() {
 
 	if *jsonfile == "" {
 		offline = false
-		lib.Info.Println("Trying to extract API key.")
-		key, err = lib.GetKey(lib.APIKeyPath)
+		key, err = lib.GetAPIKey()
 		if err != nil {
 			lib.Warning.Println(err)
 		} else {

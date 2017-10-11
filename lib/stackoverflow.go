@@ -3,8 +3,24 @@ package lib
 import (
 	"fmt"
 	"html"
+	"os"
 	"regexp"
 )
+
+func GetAPIKey() (key string, err error) {
+	Info.Println("Trying to load API key.")
+	key = os.Getenv("API_KEY")
+	if key != "" {
+		return key, nil
+	}
+
+	Info.Println("Trying to extract API key.")
+	key, err = GetKey(APIKeyPath)
+	if err != nil {
+		return "", err
+	}
+	return key, nil
+}
 
 func GetTags(userid int, key string, offline bool) string {
 
