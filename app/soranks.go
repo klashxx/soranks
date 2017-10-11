@@ -128,7 +128,6 @@ func main() {
 			}
 		}
 	}
-
 	lib.Info.Printf("%04d pages requested.\n", lastPage)
 	lib.Info.Printf("%04d users found.\n", counter)
 }

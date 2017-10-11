@@ -10,11 +10,11 @@ import (
 
 func GetKey(path string) (string, error) {
 	if _, err := os.Stat(path); err != nil {
-		return "", fmt.Errorf("Can't find key: %s\n", path)
+		return "", fmt.Errorf("can't find key: %s", path)
 	}
 	strkey, err := ioutil.ReadFile(path)
 	if err != nil {
-		return "", fmt.Errorf("Can't load key: %s\n", err)
+		return "", fmt.Errorf("can't load key: %s", err)
 	}
 	return strings.TrimRight(string(strkey)[:], "\n"), nil
 }

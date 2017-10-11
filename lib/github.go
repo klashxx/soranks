@@ -28,12 +28,12 @@ func GetToken() (token string) {
 func GHPublisher(token string, publish *string, branch string, author Committer) error {
 	fname := fmt.Sprintf("%s.md", *publish)
 	if err := GitHubConnector(rspMDpath, fname, token, branch, author); err != nil {
-		return fmt.Errorf("GitHub connection Markdown (%s) error: %s\n", fname, err)
+		return fmt.Errorf("github connection MD (%s) error: %s", fname, err)
 	}
 
 	fname = fmt.Sprintf("%s.json", *publish)
 	if err := GitHubConnector(rspJSONpath, fname, token, branch, author); err != nil {
-		return fmt.Errorf("GitHub connection JSON (%s) error: %s\n", fname, err)
+		return fmt.Errorf("github connection JSON (%s) error: %s", fname, err)
 	}
 	return nil
 }

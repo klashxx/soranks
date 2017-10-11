@@ -63,7 +63,7 @@ func GetUserInfo(users *SOUsers, min int, location *regexp.Regexp, counter *int,
 		}
 
 		if location.MatchString(user.Location) {
-			*counter += 1
+			*counter++
 			if *counter == 1 && term {
 				Info.Println("User data:")
 				Info.Printf("%4s %-30s %6s %s\n", "Rank", "Name", "Rep", "Location")
