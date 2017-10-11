@@ -17,14 +17,22 @@ const (
 )
 
 var (
-	author   = lib.Committer{Name: "klasxx", Email: "klashxx@gmail.com"}
-	branch   = "dev"
-	offline  = true
-	location = flag.String("location", ".", "finder regex")
-	jsonfile = flag.String("json", "", "json sample file (offline)")
-	limit    = flag.Int("limit", 20, "max number of records")
-	term     = flag.Bool("term", false, "print output to terminal")
-	publish  = flag.String("publish", "", "values: 'local' or remote filename (NO ext)")
+	location     = flag.String("location", ".", "finder regex")
+	jsonfile     = flag.String("json", "", "json sample file (offline)")
+	limit        = flag.Int("limit", 20, "max number of records")
+	term         = flag.Bool("term", false, "print output to terminal")
+	publish      = flag.String("publish", "", "values: 'local' or remote filename (NO ext)")
+	author       = lib.Committer{Name: "klasxx", Email: "klashxx@gmail.com"}
+	branch       = "dev"
+	offline      = true
+	stop         = false
+	streamErrors = 0
+	currentPage  = 1
+	lastPage     = currentPage
+	counter      = 0
+	users        = new(lib.SOUsers)
+	key          = ""
+	token        = ""
 )
 
 func main() {
@@ -40,34 +48,38 @@ func main() {
 
 	re := regexp.MustCompile(fmt.Sprintf("(?i)%s", *location))
 
-	if *jsonfile == "" {
-		offline = false
-	}
-
-	stop := false
-	streamErrors := 0
-	currentPage := 1
-	lastPage := currentPage
-	counter := 0
-
 	var ranks lib.Ranks
 	var err error
 
-	users := new(lib.SOUsers)
-	key := ""
+	if *jsonfile == "" {
+		offline = false
+		lib.Info.Println("Trying to extract API key.")
+		key, err = lib.GetKey(lib.APIKeyPath)
+		if err != nil {
+			lib.Warning.Println(err)
+		} else {
+			key = fmt.Sprintf("&key=%s", key)
+		}
+	}
+
+	if *publish != "" && *publish != "local" {
+		token, err = lib.GetKey(lib.GitHubToken)
+		if err != nil {
+			lib.Error.Println("Can't get GitHub token.")
+			os.Exit(5)
+		}
+	}
 
 	for {
-		if *jsonfile == "" {
-			if lastPage == currentPage {
-				lib.Info.Println("Trying to extract API key.")
-				key, err = lib.GetKey(lib.APIKeyPath)
-				if err != nil {
-					lib.Warning.Println(err)
-				} else {
-					key = fmt.Sprintf("&key=%s", key)
-				}
+		if offline {
+			lib.Info.Println("Extracting from source JSON file.")
+			err = lib.StreamFile(*jsonfile, users)
+			if err != nil {
+				lib.Error.Println("Can't decode json file.")
+				os.Exit(5)
 			}
-
+			stop = true
+		} else {
 			lib.Trace.Printf("Requesting page: %d\n", currentPage)
 
 			url := fmt.Sprintf("%s/%s%s", lib.SOApiURL, fmt.Sprintf(lib.SOUsersQuery, currentPage), key)
@@ -77,21 +89,13 @@ func main() {
 			if err != nil || len(users.Items) == 0 {
 
 				lib.Warning.Println("Can't stream data.")
-				streamErrors += 1
+				streamErrors++
 				if streamErrors >= MaxErrors {
 					lib.Error.Println("Max retry number reached")
 					os.Exit(5)
 				}
 				continue
 			}
-		} else {
-			lib.Info.Println("Extracting from source JSON file.")
-			err = lib.StreamFile(*jsonfile, users)
-			if err != nil {
-				lib.Error.Println("Can't decode json file.")
-				os.Exit(5)
-			}
-			stop = true
 		}
 
 		if len(users.Items) == 0 {
@@ -107,7 +111,7 @@ func main() {
 		}
 
 		lastPage = currentPage
-		currentPage += 1
+		currentPage++
 		if (currentPage >= MaxPages && MaxPages != 0) || !users.HasMore || stop {
 			break
 		}
@@ -125,7 +129,7 @@ func main() {
 		}
 
 		if *publish != "local" {
-			if err := lib.GHPublisher(publish, branch, author); err != nil {
+			if err := lib.GHPublisher(token, publish, branch, author); err != nil {
 				fmt.Println(err)
 				os.Exit(5)
 			}

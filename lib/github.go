@@ -7,12 +7,7 @@ import (
 	"time"
 )
 
-func GHPublisher(publish *string, branch string, author Committer) error {
-	token, err := GetKey(GitHubToken)
-	if err != nil {
-		return err
-	}
-
+func GHPublisher(token string, publish *string, branch string, author Committer) error {
 	fname := fmt.Sprintf("%s.md", *publish)
 	if err := GitHubConnector(RspMDPath, fname, token, branch, author); err != nil {
 		return fmt.Errorf("GitHub connection Markdown (%s) error: %s\n", fname, err)
